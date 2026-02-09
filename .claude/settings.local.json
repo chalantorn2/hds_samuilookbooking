@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout src/components/documents/services/documentDataMapper.js)",
+      "Bash(git checkout src/components/documents/services/voucherDataService.js src/components/documents/services/otherDataService.js src/components/documents/services/depositDataService.js)",
+      "Bash(git checkout api/handlers/TicketInvoiceHandler.php)",
+      "Bash(git checkout api/handlers/OtherHandler.php api/handlers/DepositHandler.php)",
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "Bash(php -l:*)",
+      "Bash(php -r:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run build:*)",
+      "Bash(findstr:*)",
+      "Bash(php test_payment_insert.php:*)",
+      "Bash(where:*)",
+      "Bash(del fix_deposit_grand_total.sql)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

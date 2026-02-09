@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* กำหนดให้ใช้ฟอนต์ Prompt ทั้งเว็บไซต์ */
+@layer base {
+  html {
+    font-family: "Prompt", sans-serif;
+  }
+
+  body {
+    font-family: "Prompt", sans-serif;
+  }
+
+  /* เพิ่ม cursor pointer สำหรับองค์ประกอบที่คลิกได้ทั้งหมด */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  select,
+  [role="button"],
+  [onclick],
+  label[for] {
+    cursor: pointer;
+  }
+
+  /* ยกเว้น disabled elements */
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  [disabled] {
+    cursor: not-allowed;
+  }
+}
+/* เพิ่มใน style.css หรือ index.css */
+
+/* CSS สำหรับให้ข้อมูลใน Information Module แสดงเป็นตัวพิมพ์ใหญ่ */
+
+/* สำหรับตารางข้อมูล Supplier และ Customer */
+.information-table tbody td,
+.information-table thead th {
+  text-transform: uppercase !important;
+}
+
+/* สำหรับฟอร์มการเพิ่ม/แก้ไขข้อมูล */
+.information-form input[type="text"],
+.information-form select,
+.information-form textarea {
+  text-transform: uppercase !important;
+}
+
+/* สำหรับ Modal แก้ไขข้อมูล */
+.information-modal input[type="text"],
+.information-modal select,
+.information-modal textarea {
+  text-transform: uppercase !important;
+}
+
+/* สำหรับ dropdown และ search results */
+.information-dropdown .dropdown-item,
+.information-search-results li {
+  text-transform: uppercase !important;
+}
+
+/* สำหรับ Badge และ Status */
+.information-badge,
+.information-status {
+  text-transform: uppercase !important;
+}
+
+.information-table tbody td .email,
+.information-table tbody td .no-uppercase {
+  text-transform: none !important;
+}
+
+.deposit-input-safe {
+  text-transform: uppercase !important;
+}
+/* เพิ่มบรรทัดนี้ */
+.passenger-name-input {
+  text-transform: uppercase !important;
+}
+
+/* หรือถ้าไม่ต้องการตัวใหญ่เลย ให้ใช้ */
+.passenger-name-input-safe {
+  text-transform: none !important;
+}

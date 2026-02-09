@@ -1,0 +1,47 @@
+{
+  "name": "samuilookbooking",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "@tailwindcss/cli": "^4.0.14",
+    "@tailwindcss/vite": "^4.0.14",
+    "date-fns": "^4.1.0",
+    "formidable": "^3.5.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.479.0",
+    "react": "^19.0.0",
+    "react-datepicker": "^8.4.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.3.0",
+    "react-toastify": "^11.0.5",
+    "sib-api-v3-sdk": "^8.5.0",
+    "superagent": "^10.2.1",
+    "tailwindcss": "^4.0.14",
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "serve": "^14.2.4",
+    "vite": "^6.2.0"
+  }
+}
