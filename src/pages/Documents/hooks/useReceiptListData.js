@@ -71,7 +71,7 @@ export const useReceiptListData = ({
           }
         }
 
-        // Mark as MultiPOReceipt
+        // Mark as MultiINVReceipt
         receipt.isMultiPOReceipt = !!(receipt.rc_linked_tickets &&
           (receipt.rc_linked_tickets.primary_ticket_id || receipt.rc_linked_tickets.PRIMARY_TICKET_ID));
 
@@ -131,7 +131,7 @@ export const useReceiptListData = ({
           // ค้นหาใน Passengers
           (receipt.passengersDisplay &&
             receipt.passengersDisplay.toLowerCase().includes(searchLower)) ||
-          // ค้นหาใน PO Number
+          // ค้นหาใน INV Number
           (receipt.po_number &&
             receipt.po_number.toLowerCase().includes(searchLower))
       );

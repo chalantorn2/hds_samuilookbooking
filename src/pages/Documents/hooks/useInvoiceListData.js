@@ -51,8 +51,10 @@ export const useInvoiceListData = ({
         return;
       }
 
-      const invoiceData = response.data || [];
-      console.log("✅ Fetched invoices:", invoiceData.length, "items");
+      const rawData = response.data || [];
+      // ✅ กรองเฉพาะ INV เท่านั้น - ไม่แสดง VC, HTL, TRN, VSA, OTH
+      const invoiceData = rawData.filter(item => item.service_type === 'INV');
+      console.log("✅ Fetched invoices:", invoiceData.length, "items (filtered INV only from", rawData.length, ")");
 
       setAllInvoices(invoiceData);
       filterData(invoiceData, searchTerm, searchField);

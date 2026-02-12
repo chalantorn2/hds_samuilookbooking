@@ -852,15 +852,15 @@ class ReportHandler extends BaseHandler
                     vdr.ticket_type,
                     vdr.ticket_type_details,
                     vdr.ticket_numbers,
-                    vdr.adult_net_price,
-                    vdr.adult_sale_price,
-                    vdr.adult_pax,
-                    vdr.child_net_price,
-                    vdr.child_sale_price,
-                    vdr.child_pax,
-                    vdr.infant_net_price,
-                    vdr.infant_sale_price,
-                    vdr.infant_pax,
+                    vdr.adt1_net_price,
+                    vdr.adt1_sale_price,
+                    vdr.adt1_pax,
+                    vdr.adt2_net_price,
+                    vdr.adt2_sale_price,
+                    vdr.adt2_pax,
+                    vdr.adt3_net_price,
+                    vdr.adt3_sale_price,
+                    vdr.adt3_pax,
                     vdr.extras_net_total,
                     vdr.extras_sale_total,
                     i.is_domestic
@@ -887,6 +887,7 @@ class ReportHandler extends BaseHandler
             foreach ($documentTypes as $docType) {
                 switch ($docType) {
                     case 'PO':
+                    case 'INV':
                         $allowedBookingTypes[] = 'Flight';
                         break;
                     case 'VC':

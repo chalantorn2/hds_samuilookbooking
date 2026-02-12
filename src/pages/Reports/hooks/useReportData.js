@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
 const API_URL = `${API_BASE_URL}/gateway.php`;
 
 export const useReportData = ({

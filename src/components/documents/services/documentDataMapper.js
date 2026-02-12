@@ -45,15 +45,15 @@ export const getInvoiceData = async (
   isInvoice = false
 ) => {
   try {
-    // ขั้นตอนที่ 1: สร้าง PO Number หรือ INV Number ก่อน
+    // ขั้นตอนที่ 1: สร้าง INV Number ก่อน
     // ✅ ส่ง userId สำหรับ Activity Log "issue"
     let documentResult;
     if (isInvoice) {
-      // สำหรับ INV - ไม่ต้องสร้าง PO ใหม่ เพราะ INV ถูกสร้างพร้อม FT แล้ว
+      // สำหรับ INV - ไม่ต้องสร้าง INV ใหม่ เพราะ INV ถูกสร้างพร้อม FT แล้ว
       // แค่ตรวจสอบว่ามี invoice_number หรือไม่
       documentResult = { success: true };
     } else {
-      // สำหรับ Invoice ปกติ - สร้าง PO Number
+      // สำหรับ Invoice ปกติ - สร้าง INV Number
       const poResult = await generatePOForTicket(ticketId, userId);
       if (!poResult.success) {
         throw new Error(poResult.error);
@@ -228,37 +228,37 @@ export const getInvoiceData = async (
 
     // แปลงข้อมูลราคาผู้โดยสาร (เฉพาะที่มี pax > 0) - logic เดิม
     const passengerTypes = [];
-    if (pricing.adult_pax > 0) {
+    if (pricing.adt1_pax > 0) {
       passengerTypes.push({
-        type: "ADULT",
-        quantity: pricing.adult_pax,
-        unitPrice: pricing.adult_sale_price || 0,
-        amount: pricing.adult_total || 0,
+        type: "ADT 1",
+        quantity: pricing.adt1_pax,
+        unitPrice: pricing.adt1_sale_price || 0,
+        amount: pricing.adt1_total || 0,
         priceDisplay: `${formatCurrencyNoDecimal(
-          pricing.adult_sale_price || 0
-        )} x ${pricing.adult_pax}`,
+          pricing.adt1_sale_price || 0
+        )} x ${pricing.adt1_pax}`,
       });
     }
-    if (pricing.child_pax > 0) {
+    if (pricing.adt2_pax > 0) {
       passengerTypes.push({
-        type: "CHILD",
-        quantity: pricing.child_pax,
-        unitPrice: pricing.child_sale_price || 0,
-        amount: pricing.child_total || 0,
+        type: "ADT 2",
+        quantity: pricing.adt2_pax,
+        unitPrice: pricing.adt2_sale_price || 0,
+        amount: pricing.adt2_total || 0,
         priceDisplay: `${formatCurrencyNoDecimal(
-          pricing.child_sale_price || 0
-        )} x ${pricing.child_pax}`,
+          pricing.adt2_sale_price || 0
+        )} x ${pricing.adt2_pax}`,
       });
     }
-    if (pricing.infant_pax > 0) {
+    if (pricing.adt3_pax > 0) {
       passengerTypes.push({
-        type: "INFANT",
-        quantity: pricing.infant_pax,
-        unitPrice: pricing.infant_sale_price || 0,
-        amount: pricing.infant_total || 0,
+        type: "ADT 3",
+        quantity: pricing.adt3_pax,
+        unitPrice: pricing.adt3_sale_price || 0,
+        amount: pricing.adt3_total || 0,
         priceDisplay: `${formatCurrencyNoDecimal(
-          pricing.infant_sale_price || 0
-        )} x ${pricing.infant_pax}`,
+          pricing.adt3_sale_price || 0
+        )} x ${pricing.adt3_pax}`,
       });
     }
 
@@ -316,7 +316,7 @@ export const getInvoiceData = async (
       total: detail.grand_total || 0,
     };
 
-    // Return เหมือนเดิมทั้งหมด
+    // Return data
     return {
       success: true,
       data: {
@@ -327,9 +327,10 @@ export const getInvoiceData = async (
         passengerTypes,
         extras,
         summary,
-        poResult: isInvoice ? null : documentResult, // ส่งผลลัพธ์การสร้าง PO กลับไปด้วย (ถ้าไม่ใช่ INV)
+        remark: additional.remark || "",
+        poResult: isInvoice ? null : documentResult,
         updatedByName: updatedByName,
-        issueDate: ticket.updated_at || ticket.created_at, // ใช้ updated_at หรือ created_at
+        issueDate: ticket.updated_at || ticket.created_at,
       },
     };
   } catch (error) {
@@ -717,8 +718,9 @@ export const getReceiptData = async (
 
     console.log("🔍 Receipt - Customer info result:", customerInfo);
     // แปลงข้อมูล Receipt (ใช้ RC Number)
+    // ✅ ใช้ invoice_number เป็นหลัก fallback เป็น po_number
     const receiptInfo = {
-      poNumber: ticket.po_number || "",
+      poNumber: ticket.invoice_number || ticket.po_number || "",
       rcNumber: ticket.rc_number || rcResult.rcNumber,
       date: formatDate(detail.issue_date),
       dueDate: formatDate(detail.due_date),
@@ -727,12 +729,46 @@ export const getReceiptData = async (
 
     // 🔧 ประมวลผลผู้โดยสารที่เลือก - ใช้ helper function
     const MAX_PASSENGERS_DISPLAY = 6;
-    const selectedPassengerData =
-      getSelectionData(actualSelectionData, "passengers") || [];
-    const selectedExtraData =
-      getSelectionData(actualSelectionData, "extras") || [];
-    const calculatedTotals =
-      getSelectionData(actualSelectionData, "totals") || {};
+
+    // ✅ Fallback: ถ้าไม่มี selectionData ให้ใช้ข้อมูลทั้งหมดจาก ticket
+    let selectedPassengerData, selectedExtraData, calculatedTotals;
+
+    if (actualSelectionData) {
+      selectedPassengerData =
+        getSelectionData(actualSelectionData, "passengers") || [];
+      selectedExtraData =
+        getSelectionData(actualSelectionData, "extras") || [];
+      calculatedTotals =
+        getSelectionData(actualSelectionData, "totals") || {};
+    } else {
+      // ไม่มี selectionData → ใช้ passengers/extras/totals ทั้งหมดจาก ticket
+      selectedPassengerData = (ticket.tickets_passengers || []).map((p) => ({
+        passenger_name: p.passenger_name,
+        age: p.age,
+        ticket_number: p.ticket_number,
+        ticket_code: p.ticket_code,
+      }));
+      selectedExtraData = (ticket.tickets_extras || []).map((e) => ({
+        description: e.description,
+        sale_price: e.sale_price,
+        selectedQuantity: e.quantity,
+      }));
+      calculatedTotals = {
+        subtotal: detail.subtotal_before_vat || 0,
+        vatAmount: detail.vat_amount || 0,
+        total: detail.grand_total || 0,
+        selectedPassengerTypes: (() => {
+          // ใช้ข้อมูลจาก tickets_pricing เหมือน Invoice
+          const pricing = ticket.tickets_pricing?.[0] || {};
+          return {
+            ADT1: parseInt(pricing.adt1_pax) || 0,
+            ADT2: parseInt(pricing.adt2_pax) || 0,
+            ADT3: parseInt(pricing.adt3_pax) || 0,
+          };
+        })(),
+      };
+      console.log("🔧 Fallback: ใช้ข้อมูลทั้งหมดจาก ticket (ไม่มี selectionData)");
+    }
 
     console.log("🔧 หลังจากใช้ getSelectionData:", {
       selectedPassengerCount: selectedPassengerData.length,
@@ -804,6 +840,7 @@ export const getReceiptData = async (
       supplierName,
       multiSegmentRoute,
       routeDisplay: multiSegmentRoute || "N/A",
+      routes: routes || [], // ✅ เพิ่ม routes array เต็ม ๆ เหมือน Invoice
     };
 
     // 🔧 แปลงข้อมูลราคาผู้โดยสารตามที่คำนวณใหม่ - ใช้ helper function
@@ -816,47 +853,47 @@ export const getReceiptData = async (
     console.log("🔧 ข้อมูลประเภทผู้โดยสาร:", {
       calculatedTotals,
       selectedTypes,
-      hasADT: selectedTypes.ADT > 0,
-      hasCHD: selectedTypes.CHD > 0,
-      hasINF: selectedTypes.INF > 0,
+      hasADT1: selectedTypes.ADT1 > 0,
+      hasADT2: selectedTypes.ADT2 > 0,
+      hasADT3: selectedTypes.ADT3 > 0,
     });
 
     // ดึงราคาต่อหน่วยจากข้อมูลเดิม
     const originalPricing = ticket.tickets_pricing?.[0] || {};
 
-    if (selectedTypes.ADT > 0) {
+    if (selectedTypes.ADT1 > 0) {
       passengerTypes.push({
-        type: "ADULT",
-        quantity: selectedTypes.ADT,
-        unitPrice: originalPricing.adult_sale_price || 0,
-        amount: selectedTypes.ADT * (originalPricing.adult_sale_price || 0),
+        type: "ADT 1",
+        quantity: selectedTypes.ADT1,
+        unitPrice: originalPricing.adt1_sale_price || 0,
+        amount: selectedTypes.ADT1 * (originalPricing.adt1_sale_price || 0),
         priceDisplay: `${formatCurrencyNoDecimal(
-          originalPricing.adult_sale_price || 0
-        )} x ${selectedTypes.ADT}`,
+          originalPricing.adt1_sale_price || 0
+        )} x ${selectedTypes.ADT1}`,
       });
     }
 
-    if (selectedTypes.CHD > 0) {
+    if (selectedTypes.ADT2 > 0) {
       passengerTypes.push({
-        type: "CHILD",
-        quantity: selectedTypes.CHD,
-        unitPrice: originalPricing.child_sale_price || 0,
-        amount: selectedTypes.CHD * (originalPricing.child_sale_price || 0),
+        type: "ADT 2",
+        quantity: selectedTypes.ADT2,
+        unitPrice: originalPricing.adt2_sale_price || 0,
+        amount: selectedTypes.ADT2 * (originalPricing.adt2_sale_price || 0),
         priceDisplay: `${formatCurrencyNoDecimal(
-          originalPricing.child_sale_price || 0
-        )} x ${selectedTypes.CHD}`,
+          originalPricing.adt2_sale_price || 0
+        )} x ${selectedTypes.ADT2}`,
       });
     }
 
-    if (selectedTypes.INF > 0) {
+    if (selectedTypes.ADT3 > 0) {
       passengerTypes.push({
-        type: "INFANT",
-        quantity: selectedTypes.INF,
-        unitPrice: originalPricing.infant_sale_price || 0,
-        amount: selectedTypes.INF * (originalPricing.infant_sale_price || 0),
+        type: "ADT 3",
+        quantity: selectedTypes.ADT3,
+        unitPrice: originalPricing.adt3_sale_price || 0,
+        amount: selectedTypes.ADT3 * (originalPricing.adt3_sale_price || 0),
         priceDisplay: `${formatCurrencyNoDecimal(
-          originalPricing.infant_sale_price || 0
-        )} x ${selectedTypes.INF}`,
+          originalPricing.adt3_sale_price || 0
+        )} x ${selectedTypes.ADT3}`,
       });
     }
 
@@ -948,11 +985,11 @@ export const getReceiptData = async (
 
     console.log("🔧 ✅ getReceiptData เสร็จสิ้น - ส่งผลลัพธ์กลับ");
 
-    // ⭐ ดึงข้อมูล Multi PO Receipt จาก API response
+    // ⭐ ดึงข้อมูล Multi INV Receipt จาก API response
     const selectedPOs = ticket.selectedPOs || null;
     const multiPOSummary = ticket.multiPOSummary || null;
 
-    console.log("🔧 Multi PO Debug:", {
+    console.log("🔧 Multi INV Debug:", {
       hasSelectedPOs: !!selectedPOs,
       selectedPOsCount: selectedPOs?.length || 0,
       hasMultiPOSummary: !!multiPOSummary,
@@ -976,10 +1013,11 @@ export const getReceiptData = async (
         passengerTypes,
         extras,
         summary: finalSummary,
+        remark: additional.remark || "",
         rcResult,
         updatedByName: receiptUpdatedByName,
-        issueDate: ticket.updated_at || ticket.created_at, // ใช้ updated_at หรือ created_at
-        // ⭐ Multi PO Receipt data
+        issueDate: ticket.updated_at || ticket.created_at,
+        // Multi INV Receipt data
         selectedPOs: selectedPOs,
       },
     };

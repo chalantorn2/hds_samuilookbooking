@@ -160,7 +160,7 @@ const BulkEmailReceiptModal = ({
         }
 
         // Generate PDF
-        // ✅ เช็คว่าเป็น Multi PO Receipt หรือไม่
+        // ✅ เช็คว่าเป็น Multi INV Receipt หรือไม่
         const pdfResult =
           dataResult.data.selectedPOs && dataResult.data.selectedPOs.length > 0
             ? await generateMultiPOReceiptPDFSafely(dataResult.data, receipt.id)

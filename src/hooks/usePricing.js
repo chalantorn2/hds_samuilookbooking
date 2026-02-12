@@ -10,9 +10,9 @@ import { useState } from "react";
 // แก้ไขเฉพาะจุดในฟังก์ชัน resetPricing เพื่อแก้บั๊กที่มีอยู่
 const usePricing = (
   initialPricing = {
-    adult: { net: "", sale: "", pax: 0, total: "0" },
-    child: { net: "", sale: "", pax: 0, total: "0" },
-    infant: { net: "", sale: "", pax: 0, total: "0" },
+    adt1: { net: "", sale: "", pax: 0, total: "0" },
+    adt2: { net: "", sale: "", pax: 0, total: "0" },
+    adt3: { net: "", sale: "", pax: 0, total: "0" },
   },
   initialVatPercent = 7
 ) => {
@@ -50,11 +50,11 @@ const usePricing = (
 
   // คำนวณราคารวมก่อนภาษี
   const calculateSubtotal = () => {
-    const adultTotal = parseFloat(pricing.adult?.total || 0);
-    const childTotal = parseFloat(pricing.child?.total || 0);
-    const infantTotal = parseFloat(pricing.infant?.total || 0);
+    const adt1Total = parseFloat(pricing.adt1?.total || 0);
+    const adt2Total = parseFloat(pricing.adt2?.total || 0);
+    const adt3Total = parseFloat(pricing.adt3?.total || 0);
 
-    return adultTotal + childTotal + infantTotal;
+    return adt1Total + adt2Total + adt3Total;
   };
 
   // คำนวณภาษี

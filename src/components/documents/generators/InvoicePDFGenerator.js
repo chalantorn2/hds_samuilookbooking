@@ -287,20 +287,20 @@ const renderPassengerTable = (
   pageNumber,
   totalPages
 ) => {
-  const adultPrice =
-    invoiceData.passengerTypes?.find((p) => p.type === "ADULT")?.priceDisplay ||
+  const adt1Price =
+    invoiceData.passengerTypes?.find((p) => p.type === "ADT 1")?.priceDisplay ||
     "";
-  const childPrice =
-    invoiceData.passengerTypes?.find((p) => p.type === "CHILD")?.priceDisplay ||
+  const adt2Price =
+    invoiceData.passengerTypes?.find((p) => p.type === "ADT 2")?.priceDisplay ||
     "";
-  const infantPrice =
-    invoiceData.passengerTypes?.find((p) => p.type === "INFANT")
+  const adt3Price =
+    invoiceData.passengerTypes?.find((p) => p.type === "ADT 3")
       ?.priceDisplay || "";
 
-  // เตรียม routes สำหรับแสดง (สูงสุด 4 routes) - เปลี่ยนเป็น object
+  // เตรียม routes สำหรับแสดง (สูงสุด 5 routes) - เปลี่ยนเป็น object
   let routesList = [];
   if (invoiceData.flights?.routes && invoiceData.flights.routes.length > 0) {
-    const maxRoutes = 4;
+    const maxRoutes = 5;
     routesList = invoiceData.flights.routes.slice(0, maxRoutes).map((route) => {
       return {
         flight: route.flight_number || route.flight || "",
@@ -330,8 +330,8 @@ const renderPassengerTable = (
     ];
   }
 
-  // เติมบรรทัดว่างให้ครบ 4 routes
-  while (routesList.length < 4) {
+  // เติมบรรทัดว่างให้ครบ 5 routes
+  while (routesList.length < 5) {
     routesList.push({
       flight: "",
       /* rbd: "", */ date: "",
@@ -362,43 +362,40 @@ const renderPassengerTable = (
         </thead>
         <tbody>
           
-          <!-- NAME Section - แสดง 6 บรรทัดเสมอ -->
+          <!-- NAME Section - แสดงชื่อผู้โดยสาร + ราคาตามประเภท -->
           <tr>
             <td class="print-section-header">NAME /ชื่อผู้โดยสาร</td>
             <td class="print-td-amount"></td>
           </tr>
-          ${passengers
-            .map(
-              (passenger, index) => `
+          ${(() => {
+            const priceList = [];
+            if (adt1Price) priceList.push({ label: "ADT 1", price: adt1Price });
+            if (adt2Price) priceList.push({ label: "ADT 2", price: adt2Price });
+            if (adt3Price) priceList.push({ label: "ADT 3", price: adt3Price });
+
+            return passengers
+              .map(
+                (passenger, index) => `
   <tr>
-    <td class="print-passenger-item">
+    <td class="print-passenger-item print-airline-row">
       <div class="print-passenger-grid">
         <span class="passenger-index">
           ${passenger.displayData?.index || ""}
         </span>
         <span class="passenger-name">
-       ${passenger.displayData?.name
-            ? passenger.displayData.name.length > 25
-              ? passenger.displayData.name.substring(0, 25) + "..."
-              : passenger.displayData.name
-            : "\u00A0"}
-        </span>
-        <span class="passenger-age">
-          ${passenger.displayData?.age || "\u00A0"}
-        </span>
-        <span class="passenger-ticket">
-          ${passenger.displayData?.ticketNumber || "\u00A0"}
-        </span>
-        <span class="passenger-code">
-          ${passenger.displayData?.ticketCode || "\u00A0"}
+          ${passenger.displayData?.name || "\u00A0"}
         </span>
       </div>
+      <span class="print-passenger-type">
+        ${priceList[index]?.label || ""}
+      </span>
     </td>
-    <td class="print-td-amount"></td>
+    <td class="print-td-amount">${priceList[index]?.price || ""}</td>
   </tr>
 `
-            )
-            .join("")}
+              )
+              .join("");
+          })()}
 
           <!-- AIR TICKET Section - 7 บรรทัดเสมอ (แบบ Deposit) -->
           <tr>
@@ -406,108 +403,47 @@ const renderPassengerTable = (
             <td class="print-td-amount"></td>
           </tr>
 
-          <!-- บรรทัดที่ 1: Supplier only -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <span class="print-airline-name">${
-                invoiceData.flights?.supplierName || ""
-              }</span>
-            </td>
-            <td class="print-td-amount"></td>
-          </tr>
-
-          <!-- บรรทัดที่ 2: Route[0] + ADULT (ซ่อนข้อความถ้าไม่มีราคา) -->
+          <!-- บรรทัดที่ 1-5: Route[0]-Route[4] (แสดงแค่ route ไม่มีราคา) -->
+          ${[0, 1, 2, 3, 4].map(i => `
           <tr>
             <td class="print-section-item print-airline-row">
               <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[0].flight}</span>
-                <!-- <span class="route-rbd">${routesList[0].rbd}</span> -->
-                <span class="route-date">${routesList[0].date}</span>
-                <span class="route-path">${routesList[0].path}</span>
-                <span class="route-time">${routesList[0].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                adultPrice ? "ADULT" : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${adultPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 3: Route[1] + CHILD (ซ่อนข้อความถ้าไม่มีราคา) -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[1].flight}</span>
-                <!-- <span class="route-rbd">${routesList[1].rbd}</span> -->
-                <span class="route-date">${routesList[1].date}</span>
-                <span class="route-path">${routesList[1].path}</span>
-                <span class="route-time">${routesList[1].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                childPrice ? "CHILD" : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${childPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 4: Route[2] + INFANT (ซ่อนข้อความถ้าไม่มีราคา) -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[2].flight}</span>
-                <!-- <span class="route-rbd">${routesList[2].rbd}</span> -->
-                <span class="route-date">${routesList[2].date}</span>
-                <span class="route-path">${routesList[2].path}</span>
-                <span class="route-time">${routesList[2].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                infantPrice ? "INFANT" : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${infantPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 5: Route[3] (แสดงแค่ route ไม่มีราคา) -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[3].flight}</span>
-                <!-- <span class="route-rbd">${routesList[3].rbd}</span> -->
-                <span class="route-date">${routesList[3].date}</span>
-                <span class="route-path">${routesList[3].path}</span>
-                <span class="route-time">${routesList[3].time}</span>
+                <span class="route-flight">${routesList[i].flight}</span>
+                <span class="route-date">${routesList[i].date}</span>
+                <span class="route-path">${routesList[i].path}</span>
+                <span class="route-time">${routesList[i].time}</span>
               </div>
             </td>
             <td class="print-td-amount"></td>
-          </tr>
+          </tr>`).join("")}
 
-          <!-- บรรทัดที่ 6: ว่าง -->
+          <!-- บรรทัดที่ 6-7: ว่าง -->
+          <tr>
+            <td class="print-section-item">&nbsp;</td>
+            <td class="print-td-amount">&nbsp;</td>
+          </tr>
           <tr>
             <td class="print-section-item">&nbsp;</td>
             <td class="print-td-amount">&nbsp;</td>
           </tr>
 
-          <!-- บรรทัดที่ 7: ว่าง -->
+          <!-- OTHER Section - 3 บรรทัดเสมอ (แสดง Remark แทน) -->
+          <tr>
+            <td class="print-section-header">Remark</td>
+            <td class="print-td-amount"></td>
+          </tr>
+          <tr>
+            <td class="print-section-item">${invoiceData.remark || "\u00A0"}</td>
+            <td class="print-td-amount">&nbsp;</td>
+          </tr>
           <tr>
             <td class="print-section-item">&nbsp;</td>
             <td class="print-td-amount">&nbsp;</td>
           </tr>
-
-          <!-- OTHER Section - 3 บรรทัดเสมอ -->
           <tr>
-            <td class="print-section-header">Other</td>
-            <td class="print-td-amount"></td>
+            <td class="print-section-item">&nbsp;</td>
+            <td class="print-td-amount">&nbsp;</td>
           </tr>
-         ${(invoiceData.extras || [])
-           .map(
-             (extra, index) => `
-  <tr>
-    <td class="print-section-item">${extra.description || "\u00A0"}</td>
-    <td class="print-td-amount">${extra.priceDisplay || "\u00A0"}</td>
-  </tr>
-`
-           )
-           .join("")}
 
          <!-- Summary -->
 <tr class="print-summary-row">
@@ -582,7 +518,16 @@ const renderPageFooter = (pageNumber, totalPages, invoiceData) => {
   const updatedByName = invoiceData?.updatedByName || null;
   const formattedDate = getFormattedIssueDate();
 
+  const remark = invoiceData?.remark || "";
+
   return `
+    ${remark ? `
+    <!-- Remark -->
+    <div style="margin: 8px 0; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+      <strong>Remark:</strong> ${remark}
+    </div>
+    ` : ""}
+
     <!-- Payment Info & Signatures -->
     <div class="print-bottom-section">
     <div class="print-spacer"></div>
@@ -834,36 +779,18 @@ const getDocumentStyles = () => {
 
  .print-passenger-grid {
           display: grid !important;
-        grid-template-columns: 10px minmax(240px, max-content) 40px 30px 120px !important;
+          grid-template-columns: 10px 1fr !important;
           gap: 8px !important;
           align-items: center !important;
         }
 
-        /* เอาการจัดการ text overflow ออก */
-        .passenger-name {
-          text-align: left !important;
-          white-space: nowrap; /* ไม่ให้ขึ้นบรรทัดใหม่ */
-        }
-          
       .passenger-index {
         text-align: left !important;
       }
 
       .passenger-name {
         text-align: left !important;
-      }
-
-      .passenger-age {
-        text-align: center !important;
-      }
-
-      .passenger-ticket {
-        text-align: center !important;
-      }
-
-      .passenger-code {
-        text-align: left !important;
-        white-space: nowrap !important;
+        white-space: nowrap;
       }
 
 .print-airline-row {

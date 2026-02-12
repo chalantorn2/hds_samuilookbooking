@@ -247,7 +247,7 @@ const renderReceiptHeader = (receiptData) => {
           }</span>
         </div>
         ${
-          // ⭐ แสดง Ref: PO Number เฉพาะ Receipt เดี่ยวๆ (ไม่ใช่ Multi PO Receipt)
+          // ⭐ แสดง Ref: INV Number เฉพาะ Receipt เดี่ยวๆ (ไม่ใช่ Multi INV Receipt)
           !receiptData.selectedPOs || receiptData.selectedPOs.length === 0
             ? `<div class="print-info-row">
           <span class="print-info-label">Ref:</span>
@@ -283,27 +283,10 @@ const renderReceiptTable = (
   pageNumber,
   totalPages
 ) => {
-  const adultPrice =
-    receiptData.passengerTypes?.find((p) => p.type === "ADULT")?.priceDisplay ||
-    "";
-  const childPrice =
-    receiptData.passengerTypes?.find((p) => p.type === "CHILD")?.priceDisplay ||
-    "";
-  const infantPrice =
-    receiptData.passengerTypes?.find((p) => p.type === "INFANT")
-      ?.priceDisplay || "";
-
-  const adultPax =
-    receiptData.passengerTypes?.find((p) => p.type === "ADULT")?.quantity || 0;
-  const childPax =
-    receiptData.passengerTypes?.find((p) => p.type === "CHILD")?.quantity || 0;
-  const infantPax =
-    receiptData.passengerTypes?.find((p) => p.type === "INFANT")?.quantity || 0;
-
-  // เตรียม routes สำหรับแสดง (เหมือน Invoice)
+  // เตรียม routes สำหรับแสดง (เหมือน Invoice - สูงสุด 5 routes)
   let routesList = [];
   if (receiptData.flights?.routes && receiptData.flights.routes.length > 0) {
-    const maxRoutes = 4;
+    const maxRoutes = 5;
     routesList = receiptData.flights.routes.slice(0, maxRoutes).map((route) => {
       return {
         flight: route.flight_number || route.flight || "",
@@ -331,8 +314,8 @@ const renderReceiptTable = (
     ];
   }
 
-  // เติมบรรทัดว่างให้ครบ 4 routes
-  while (routesList.length < 4) {
+  // เติมบรรทัดว่างให้ครบ 5 routes
+  while (routesList.length < 5) {
     routesList.push({ flight: "", date: "", path: "", time: "" });
   }
 
@@ -359,11 +342,20 @@ const renderReceiptTable = (
             <td class="print-section-header">NAME /ชื่อผู้โดยสาร</td>
             <td class="print-td-amount"></td>
           </tr>
-          ${passengers
-            .map(
-              (passenger, index) => `
+          ${(() => {
+            const priceList = [];
+            const adt1Entry = receiptData.passengerTypes?.find((p) => p.type === "ADT 1");
+            const adt2Entry = receiptData.passengerTypes?.find((p) => p.type === "ADT 2");
+            const adt3Entry = receiptData.passengerTypes?.find((p) => p.type === "ADT 3");
+            if (adt1Entry?.priceDisplay) priceList.push({ label: "ADT 1", price: adt1Entry.priceDisplay });
+            if (adt2Entry?.priceDisplay) priceList.push({ label: "ADT 2", price: adt2Entry.priceDisplay });
+            if (adt3Entry?.priceDisplay) priceList.push({ label: "ADT 3", price: adt3Entry.priceDisplay });
+
+            return passengers
+              .map(
+                (passenger, index) => `
             <tr>
-              <td class="print-passenger-item">
+              <td class="print-passenger-item print-airline-row">
                 <div class="print-passenger-grid">
                   <span class="passenger-index">${
                     passenger.displayData?.index || ""
@@ -371,127 +363,64 @@ const renderReceiptTable = (
                   <span class="passenger-name">${
                     passenger.displayData?.name || "\u00A0"
                   }</span>
-                  <span class="passenger-age">${
-                    passenger.displayData?.age || "\u00A0"
-                  }</span>
-                  <span class="passenger-ticket">${
-                    passenger.displayData?.ticketNumber || "\u00A0"
-                  }</span>
-                  <span class="passenger-code">${
-                    passenger.displayData?.ticketCode || "\u00A0"
-                  }</span>
                 </div>
+                <span class="print-passenger-type">${
+                  priceList[index]?.label || ""
+                }</span>
               </td>
-              <td class="print-td-amount"></td>
+              <td class="print-td-amount">${priceList[index]?.price || ""}</td>
             </tr>
           `
-            )
-            .join("")}
+              )
+              .join("");
+          })()}
 
           <tr>
             <td class="print-section-header">AIR TICKET /ตั๋วเครื่องบิน</td>
             <td class="print-td-amount"></td>
           </tr>
 
-          <!-- บรรทัดที่ 1: Supplier only -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <span class="print-airline-name">${
-                receiptData.flights?.supplierName || ""
-              }</span>
-            </td>
-            <td class="print-td-amount"></td>
-          </tr>
-
-          <!-- บรรทัดที่ 2: Route[0] + ADULT -->
+          <!-- บรรทัดที่ 1-5: Route[0]-Route[4] (เหมือน Invoice - แสดงแค่ route ไม่มีราคา) -->
+          ${[0, 1, 2, 3, 4].map(i => `
           <tr>
             <td class="print-section-item print-airline-row">
               <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[0].flight}</span>
-                <span class="route-date">${routesList[0].date}</span>
-                <span class="route-path">${routesList[0].path}</span>
-                <span class="route-time">${routesList[0].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                adultPrice || adultPax > 0 ? `ADULT ${adultPax}` : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${adultPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 3: Route[1] + CHILD -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[1].flight}</span>
-                <span class="route-date">${routesList[1].date}</span>
-                <span class="route-path">${routesList[1].path}</span>
-                <span class="route-time">${routesList[1].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                childPrice || childPax > 0 ? `CHILD ${childPax}` : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${childPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 4: Route[2] + INFANT -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[2].flight}</span>
-                <span class="route-date">${routesList[2].date}</span>
-                <span class="route-path">${routesList[2].path}</span>
-                <span class="route-time">${routesList[2].time}</span>
-              </div>
-              <span class="print-passenger-type">${
-                infantPrice || infantPax > 0 ? `INFANT ${infantPax}` : ""
-              }</span>
-            </td>
-            <td class="print-td-amount">${infantPrice}</td>
-          </tr>
-
-          <!-- บรรทัดที่ 5: Route[3] -->
-          <tr>
-            <td class="print-section-item print-airline-row">
-              <div class="print-airline-name print-route-grid">
-                <span class="route-flight">${routesList[3].flight}</span>
-                <span class="route-date">${routesList[3].date}</span>
-                <span class="route-path">${routesList[3].path}</span>
-                <span class="route-time">${routesList[3].time}</span>
+                <span class="route-flight">${routesList[i].flight}</span>
+                <span class="route-date">${routesList[i].date}</span>
+                <span class="route-path">${routesList[i].path}</span>
+                <span class="route-time">${routesList[i].time}</span>
               </div>
             </td>
             <td class="print-td-amount"></td>
-          </tr>
+          </tr>`).join("")}
 
-          <!-- บรรทัดที่ 6: ว่าง -->
+          <!-- บรรทัดที่ 6-7: ว่าง -->
+          <tr>
+            <td class="print-section-item">&nbsp;</td>
+            <td class="print-td-amount">&nbsp;</td>
+          </tr>
           <tr>
             <td class="print-section-item">&nbsp;</td>
             <td class="print-td-amount">&nbsp;</td>
           </tr>
 
-          <!-- บรรทัดที่ 7: ว่าง -->
+          <!-- OTHER Section - 3 บรรทัดเสมอ (แสดง Remark แทน) -->
+          <tr>
+            <td class="print-section-header">Remark</td>
+            <td class="print-td-amount"></td>
+          </tr>
+          <tr>
+            <td class="print-section-item">${receiptData.remark || "\u00A0"}</td>
+            <td class="print-td-amount">&nbsp;</td>
+          </tr>
           <tr>
             <td class="print-section-item">&nbsp;</td>
             <td class="print-td-amount">&nbsp;</td>
           </tr>
-
           <tr>
-            <td class="print-section-header">Other</td>
-            <td class="print-td-amount"></td>
+            <td class="print-section-item">&nbsp;</td>
+            <td class="print-td-amount">&nbsp;</td>
           </tr>
-          ${(receiptData.extras || [])
-            .map(
-              (extra, index) => `
-            <tr>
-              <td class="print-section-item">${
-                extra.description || "\u00A0"
-              }</td>
-              <td class="print-td-amount">${extra.priceDisplay || "\u00A0"}</td>
-            </tr>
-          `
-            )
-            .join("")}
 
           <tr class="print-summary-row">
             <td class="print-td-amount print-summary-label">Sub-Total</td>
@@ -548,8 +477,16 @@ const renderReceiptFooter = (pageNumber, totalPages, receiptData) => {
 
   const updatedByName = receiptData?.updatedByName || null;
   const formattedDate = getFormattedIssueDate();
+  const remark = receiptData?.remark || "";
 
   return `
+    ${remark ? `
+    <!-- Remark -->
+    <div style="margin: 8px 0; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+      <strong>Remark:</strong> ${remark}
+    </div>
+    ` : ""}
+
     <div class="print-bottom-section">
       <div class="print-spacer"></div>
 
@@ -832,6 +769,29 @@ const getReceiptStyles = () => {
     .print-passenger-type {
       text-align: right;
       min-width: 60px;
+    }
+
+    .print-route-grid {
+      display: grid !important;
+      grid-template-columns: 40px 40px 200px 100px !important;
+      gap: 16px !important;
+      align-items: center !important;
+    }
+
+    .route-flight {
+      text-align: left !important;
+    }
+
+    .route-date {
+      text-align: left !important;
+    }
+
+    .route-path {
+      text-align: left !important;
+    }
+
+    .route-time {
+      text-align: left !important;
     }
 
     .print-summary-row {

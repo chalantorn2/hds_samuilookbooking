@@ -137,7 +137,7 @@ const EmailDocument = ({
           break;
 
         case "receipt":
-          // ✅ เช็คว่าเป็น Multi PO Receipt หรือไม่
+          // ✅ เช็คว่าเป็น Multi INV Receipt หรือไม่
           if (data.selectedPOs && data.selectedPOs.length > 0) {
             result = await generateMultiPOReceiptPDFSafely(data, recordId);
           } else {

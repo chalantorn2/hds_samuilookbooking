@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { FiSave, FiFileText } from "react-icons/fi";
+import { useLocation } from "react-router-dom";
+import { FiFileText } from "react-icons/fi";
 import SaleHeader from "./common/SaleHeader";
 import { DocumentViewer } from "../../components/documents";
-import PaymentMethodSection from "./common/PaymentMethodSection";
 import PassengerSection from "./ticket/PassengerSection";
 import SupplierSection from "./common/SupplierSection";
 import RouteSection from "./ticket/RouteSection";
-import TicketTypeSection from "./ticket/TicketTypeSection";
-import ExtrasSection from "./ticket/ExtrasSection";
 import PricingSummarySection from "./ticket/PricingSummarySection";
 import usePricing from "../../hooks/usePricing";
 import SaleStyles, { combineClasses } from "./common/SaleStyles";
@@ -19,7 +16,6 @@ import {
   searchSupplierByCode,
 } from "../../services/supplierService";
 import { getCustomers, createCustomer } from "../../services/customerService";
-import { validateFlightTicket } from "../../utils/validation";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../pages/Login/AuthContext";
 import { getLocalDateString } from "../../utils/helpers";
@@ -27,14 +23,12 @@ import { getLocalDateString } from "../../utils/helpers";
 const SaleTicket = () => {
   const { user: currentUser } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [suppliers, setSuppliers] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [globalEditMode, setGlobalEditMode] = useState(false);
-  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [invoicePreviewData, setInvoicePreviewData] = useState(null);
 
@@ -46,18 +40,14 @@ const SaleTicket = () => {
     id: "",
     branchType: "Head Office",
     branchNumber: "",
-    date: getLocalDateString(), // ใช้ local timezone แทน UTC
+    date: getLocalDateString(),
     creditDays: "0",
     dueDate: "",
     salesName: "",
     supplier: "",
     supplierName: "",
     supplierNumericCode: "",
-    ticketType: "bsp",
-    paymentMethod: "",
-    companyPaymentDetails: "",
-    customerPayment: "",
-    customerPaymentDetails: "",
+    remark: "",
     vatPercent: "0",
   });
 
@@ -100,7 +90,7 @@ const SaleTicket = () => {
     usePricing();
 
   const [passengers, setPassengers] = useState([
-    { id: 1, name: "", type: "ADT", ticketNumber: "", ticketCode: "" },
+    { id: 1, name: "", type: "ADT1", ticketNumber: "", ticketCode: "" },
   ]);
 
   const [routes, setRoutes] = useState([
@@ -116,17 +106,6 @@ const SaleTicket = () => {
     },
   ]);
 
-  const [extras, setExtras] = useState([
-    {
-      id: 1,
-      description: "",
-      net_price: "",
-      sale_price: "",
-      quantity: 1,
-      total_amount: "",
-    },
-  ]);
-
   useEffect(() => {
     const searchSupplier = async () => {
       if (
@@ -135,11 +114,11 @@ const SaleTicket = () => {
       ) {
         console.log(
           "Searching supplier by numeric code:",
-          formData.searchTicketNumber
+          formData.searchTicketNumber,
         );
 
         const supplier = await searchSupplierByNumericCode(
-          formData.searchTicketNumber
+          formData.searchTicketNumber,
         );
 
         if (supplier) {
@@ -204,12 +183,12 @@ const SaleTicket = () => {
       ) {
         console.log(
           "Searching for supplier code:",
-          formData.searchSupplierCode
+          formData.searchSupplierCode,
         );
 
         try {
           const supplier = await searchSupplierByCode(
-            formData.searchSupplierCode
+            formData.searchSupplierCode,
           );
           console.log("Search result:", supplier);
 
@@ -239,7 +218,7 @@ const SaleTicket = () => {
           } else {
             console.log(
               "Supplier not found for code:",
-              formData.searchSupplierCode
+              formData.searchSupplierCode,
             );
 
             // ไม่เจอ supplier -> clear ข้อมูล supplier อื่น (เก็บ code ที่พิมพ์ไว้)
@@ -281,7 +260,7 @@ const SaleTicket = () => {
       console.log("Received deposit data:", depositData);
 
       // Auto-fill formData
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         customer: depositData.customer || "",
         customerCode: depositData.customerCode || "",
@@ -296,10 +275,6 @@ const SaleTicket = () => {
         supplierId: depositData.supplierId || null,
         supplierNumericCode: depositData.supplierNumericCode || "",
         code: depositData.code || "",
-        paymentMethod: depositData.paymentMethod || "",
-        companyPaymentDetails: depositData.companyPaymentDetails || "",
-        customerPayment: depositData.customerPayment || "",
-        customerPaymentDetails: depositData.customerPaymentDetails || "",
         vatPercent: depositData.vatPercent || "0",
       }));
 
@@ -312,68 +287,36 @@ const SaleTicket = () => {
       if (depositData.pricing) {
         const pricingData = depositData.pricing;
 
-        // อัพเดท pricing
-        if (pricingData.adult) {
-          updatePricing("adult", "net", pricingData.adult.net || 0, 0);
-          updatePricing("adult", "sale", pricingData.adult.sale || 0, 0);
-          updatePricing("adult", "pax", pricingData.adult.pax || 0, pricingData.adult.total || 0);
-        }
-        if (pricingData.child) {
-          updatePricing("child", "net", pricingData.child.net || 0, 0);
-          updatePricing("child", "sale", pricingData.child.sale || 0, 0);
-          updatePricing("child", "pax", pricingData.child.pax || 0, pricingData.child.total || 0);
-        }
-        if (pricingData.infant) {
-          updatePricing("infant", "net", pricingData.infant.net || 0, 0);
-          updatePricing("infant", "sale", pricingData.infant.sale || 0, 0);
-          updatePricing("infant", "pax", pricingData.infant.pax || 0, pricingData.infant.total || 0);
+        // อัพเดท pricing (เฉพาะ Adult)
+        if (pricingData.adt1) {
+          updatePricing("adt1", "net", pricingData.adt1.net || 0, 0);
+          updatePricing("adt1", "sale", pricingData.adt1.sale || 0, 0);
+          updatePricing(
+            "adt1",
+            "pax",
+            pricingData.adt1.pax || 0,
+            pricingData.adt1.total || 0,
+          );
         }
 
-        // ✅ สร้าง passengers จากจำนวน pax
+        // สร้าง passengers จากจำนวน pax
         const generatedPassengers = [];
         let passengerId = 1;
         const ticketNumber = depositData.supplierNumericCode || "";
 
-        // สร้าง Adult passengers
-        const adultCount = pricingData.adult?.pax || 0;
+        const adultCount = pricingData.adt1?.pax || 0;
         for (let i = 0; i < adultCount; i++) {
           generatedPassengers.push({
             id: passengerId++,
             name: "",
-            type: "ADT",
+            type: "ADT1",
             ticketNumber: ticketNumber,
-            ticketCode: ""
+            ticketCode: "",
           });
         }
 
-        // สร้าง Child passengers
-        const childCount = pricingData.child?.pax || 0;
-        for (let i = 0; i < childCount; i++) {
-          generatedPassengers.push({
-            id: passengerId++,
-            name: "",
-            type: "CHD",
-            ticketNumber: ticketNumber,
-            ticketCode: ""
-          });
-        }
-
-        // สร้าง Infant passengers
-        const infantCount = pricingData.infant?.pax || 0;
-        for (let i = 0; i < infantCount; i++) {
-          generatedPassengers.push({
-            id: passengerId++,
-            name: "",
-            type: "INF",
-            ticketNumber: ticketNumber,
-            ticketCode: ""
-          });
-        }
-
-        // ถ้ามี passengers ให้ตั้งค่า ถ้าไม่มีให้ใช้ค่า default
         if (generatedPassengers.length > 0) {
           setPassengers(generatedPassengers);
-          console.log("Generated passengers from pricing:", generatedPassengers);
         }
       }
 
@@ -393,45 +336,17 @@ const SaleTicket = () => {
         setRoutes(mappedRoutes);
       }
 
-      // Auto-fill extras
-      if (depositData.extras && depositData.extras.length > 0) {
-        const mappedExtras = depositData.extras.map((extra, index) => ({
-          id: index + 1,
-          description: extra.description || "",
-          net_price: extra.net_price || "",
-          sale_price: extra.sale_price || "",
-          quantity: extra.quantity || 1,
-          total_amount: extra.total_amount || "",
-        }));
-        setExtras(mappedExtras);
-      }
-
       console.log("Auto-filled form with deposit data");
     }
   }, [location.state]);
 
-  const handleSubmit = async (e, generateInvoice = false) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setValidationErrors({});
 
-    if (generateInvoice) {
-      setIsGeneratingInvoice(true);
-    }
-
-    console.log("Form submitted", { formData, passengers, routes, pricing });
-    console.log("ticketType to be saved:", formData.ticketType);
-
-    // ✅ เพิ่ม debug สำหรับ ticket type details
-    console.log("Ticket Type Details Debug:", {
-      ticketType: formData.ticketType,
-      b2bDetails: formData.b2bDetails,
-      otherDetails: formData.otherDetails,
-      tgDetails: formData.tgDetails,
-    });
-
     try {
-      // ✅ Validation - ต้องเลือก Supplier
+      // Validation - ต้องเลือก Supplier
       if (!formData.supplierId) {
         alert("กรุณาเลือก Supplier");
         setLoading(false);
@@ -441,8 +356,6 @@ const SaleTicket = () => {
       let userId = currentUser?.id;
       let userFullname = currentUser?.fullname;
 
-      // 🔄 MIGRATED: Remove supabase.auth.getUser() call
-      // Use currentUser from AuthContext instead
       if (!userId) {
         console.warn("No user ID available from AuthContext");
       }
@@ -450,7 +363,6 @@ const SaleTicket = () => {
       let customerId = selectedCustomer?.id;
 
       if (!customerId && formData.customer) {
-        console.log("Creating new customer from form submission");
         const newCustomerResult = await createCustomer({
           name: formData.customer,
           code: formData.customerCode || null,
@@ -464,34 +376,21 @@ const SaleTicket = () => {
 
         if (newCustomerResult.success) {
           customerId = newCustomerResult.customerId;
-          console.log("New customer created with ID:", customerId);
-          // ⭐ ไม่แสดง alert สำหรับ WKIN (เพราะเป็นลูกค้าหน้างาน)
           if (formData.customerCode !== "WKIN") {
             alert(`สร้างลูกค้าใหม่สำเร็จ: ${formData.customer}`);
           }
         } else {
-          console.error("Failed to create customer:", newCustomerResult.error);
           alert(`ไม่สามารถสร้างลูกค้าใหม่ได้: ${newCustomerResult.error}`);
           setLoading(false);
           return;
         }
       } else if (customerId && formData.creditDays) {
-        // 🔄 MIGRATED: Update customer credit days via API Gateway
         try {
-          const updateResponse = await apiClient.post("/gateway.php", {
+          await apiClient.post("/gateway.php", {
             action: "updateCustomerCreditDays",
             customerId: customerId,
             creditDays: parseInt(formData.creditDays) || 0,
           });
-
-          if (updateResponse.success) {
-            console.log("Updated customer credit days:", formData.creditDays);
-          } else {
-            console.error(
-              "Error updating customer credit days:",
-              updateResponse.error
-            );
-          }
         } catch (updateError) {
           console.error("Error updating customer credit days:", updateError);
         }
@@ -502,72 +401,24 @@ const SaleTicket = () => {
         (subtotalAmount * parseFloat(formData.vatPercent || 0)) / 100;
       const totalAmount = subtotalAmount + vatAmount;
 
-      const validTicketTypes = ["bsp", "airline", "web", "tg", "b2b", "other"];
-      let ticketTypeFixed = formData.ticketType.toLowerCase();
-      if (!validTicketTypes.includes(ticketTypeFixed)) {
-        ticketTypeFixed = "bsp";
-      }
-
-      let ticketTypeDetails = null;
-      if (ticketTypeFixed === "b2b") {
-        ticketTypeDetails = formData.b2bDetails || "";
-      } else if (ticketTypeFixed === "other") {
-        ticketTypeDetails = formData.otherDetails || "";
-      } else if (ticketTypeFixed === "tg") {
-        ticketTypeDetails = formData.tgDetails || "";
-      }
-
-      console.log("Final ticket type details to send:", {
-        ticketType: ticketTypeFixed,
-        ticketTypeDetails: ticketTypeDetails,
-      });
-
-      console.log("Payment details before sending:", {
-        companyMethod: formData.paymentMethod,
-        companyDetails: formData.companyPaymentDetails,
-        customerMethod: formData.customerPayment,
-        customerDetails: formData.customerPaymentDetails,
-      });
-
-      // ✅ เพิ่ม depositId จาก location.state
+      // เพิ่ม depositId จาก location.state
       const depositData = location.state?.fromDeposit;
       const depositId = depositData?.fromDepositId || null;
-
-      console.log("🔍 Deposit Data Debug:", {
-        hasLocationState: !!location.state,
-        depositData: depositData,
-        depositId: depositId
-      });
-
-      // 🔍 DEBUG: Log customer and form data
-      console.log("🔍 DEBUG - Creating ticket:");
-      console.log("  customerId:", customerId);
-      console.log("  formData.customerCode:", formData.customerCode);
-      console.log("  formData.branchType:", formData.branchType);
-      console.log("  formData.branchNumber:", formData.branchNumber);
 
       const ticketData = {
         customerId: customerId,
         supplierId: formData.supplierId || null,
-        depositId: depositId, // ✅ เพิ่ม deposit_id
+        depositId: depositId,
         status: "pending",
         paymentStatus: "unpaid",
         createdBy: userId,
         updatedBy: userId,
-        bookingDate: formData.date || getLocalDateString(), // ใช้ local timezone แทน UTC
-        dueDate:
-          formData.dueDate ||
-          formData.date ||
-          getLocalDateString(), // ✅ ป้องกัน empty string และใช้ local timezone
+        bookingDate: formData.date || getLocalDateString(),
+        dueDate: formData.dueDate || formData.date || getLocalDateString(),
         creditDays: formData.creditDays,
         totalAmount: totalAmount,
         code: formData.code || "",
-        ticketType: ticketTypeFixed,
-        ticketTypeDetails: ticketTypeDetails,
-        companyPaymentMethod: formData.paymentMethod,
-        companyPaymentDetails: formData.companyPaymentDetails || "",
-        customerPaymentMethod: formData.customerPayment,
-        customerPaymentDetails: formData.customerPaymentDetails || "",
+        remark: formData.remark || "",
         pricing: pricing,
         subtotalAmount,
         vatPercent: parseFloat(formData.vatPercent || 0),
@@ -583,8 +434,8 @@ const SaleTicket = () => {
         routes: routes
           .filter((r) => r.origin || r.destination)
           .map((r) => ({
-            flight: r.flight, // ใช้ flight number ที่ user กรอกโดยตรง
-            flight_number: r.flight, // ไม่ต้องเชื่อมโยงกับ supplier code
+            flight: r.flight,
+            flight_number: r.flight,
             rbd: r.rbd,
             date: r.date,
             origin: r.origin,
@@ -592,94 +443,45 @@ const SaleTicket = () => {
             departure: r.departure,
             arrival: r.arrival,
           })),
-        extras: extras
-          .filter((e) => e.description)
-          .map((e) => ({
-            description: e.description,
-            net_price: e.net_price || 0,
-            sale_price: e.sale_price || 0,
-            quantity: e.quantity || 1,
-            total_amount: e.total_amount || 0,
-          })),
-        remarks: formData.remarks || "",
         salesName: userFullname || formData.salesName,
       };
 
-      console.log("Sending data to createFlightTicket:", ticketData);
-      console.log("Details sending for debugging:", {
-        paymentMethod: formData.paymentMethod,
-        companyPaymentDetails: formData.companyPaymentDetails,
-        customerPayment: formData.customerPayment,
-        customerPaymentDetails: formData.customerPaymentDetails,
-        ticketType: formData.ticketType,
-        ticketTypeDetails,
-      });
-
       const result = await createFlightTicket(ticketData);
 
-      console.log("createFlightTicket result:", result);
-      console.log("generateInvoice flag:", generateInvoice);
-
       if (result.success) {
-        const bookingId = result.ticketId || result.bookingId; // ✅ แก้ไข: API ส่งกลับเป็น ticketId
+        const bookingId = result.ticketId || result.bookingId;
         const ftNumber = result.referenceNumber;
 
-        console.log("Booking created - ID:", bookingId, "FT:", ftNumber);
+        // บันทึกสำเร็จ → ออก INV ทันที
+        try {
+          const invResponse = await apiClient.post("/gateway.php", {
+            action: "generateINVForTicket",
+            ticketId: bookingId,
+          });
 
-        // ถ้าต้องการออก INV
-        if (generateInvoice && bookingId) {
-          console.log("Attempting to generate INV for booking:", bookingId);
+          if (invResponse.success) {
+            const invNumber = invResponse.data.invoiceNumber;
 
-          try {
-            // เรียก API สร้าง INV Number
-            const invResponse = await apiClient.post("/gateway.php", {
-              action: "generateINVForTicket",
+            alert(`บันทึกและออก Invoice สำเร็จ!\nINV: ${invNumber}`);
+
+            // เปิด DocumentViewer modal แสดง INV
+            setInvoicePreviewData({
               ticketId: bookingId,
+              documentType: "inv",
+              ftNumber: ftNumber,
+              invNumber: invNumber,
             });
-
-            console.log("INV generation response:", invResponse);
-
-            if (invResponse.success) {
-              const invNumber = invResponse.data.invoiceNumber;
-              console.log("INV Number generated:", invNumber);
-
-              // แสดง Alert พร้อมทั้ง FT และ INV
-              alert(
-                `สร้าง Booking สำเร็จ!\nFT: ${ftNumber}\nINV: ${invNumber}`
-              );
-
-              // เปิด DocumentViewer modal แสดง INV
-              setInvoicePreviewData({
-                ticketId: bookingId,
-                documentType: "inv",
-                ftNumber: ftNumber,
-                invNumber: invNumber,
-              });
-              setShowInvoicePreview(true);
-            } else {
-              console.error("INV generation failed:", invResponse.error);
-              alert(
-                `สร้าง FT สำเร็จ (${ftNumber}) แต่ไม่สามารถสร้าง INV ได้: ${invResponse.error}`
-              );
-              window.location.reload();
-            }
-          } catch (invError) {
-            console.error("Error generating invoice:", invError);
+            setShowInvoicePreview(true);
+          } else {
             alert(
-              `สร้าง FT สำเร็จ (${ftNumber}) แต่เกิดข้อผิดพลาดในการสร้าง INV: ${invError.message}`
+              `สร้าง FT สำเร็จ (${ftNumber}) แต่ไม่สามารถสร้าง INV ได้: ${invResponse.error}`,
             );
             window.location.reload();
           }
-        } else {
-          console.log(
-            "Not generating INV - generateInvoice:",
-            generateInvoice,
-            "bookingId:",
-            bookingId
+        } catch (invError) {
+          alert(
+            `สร้าง FT สำเร็จ (${ftNumber}) แต่เกิดข้อผิดพลาดในการสร้าง INV: ${invError.message}`,
           );
-          alert(`สร้าง Booking สำเร็จ ID: ${ftNumber}`);
-          // ✅ ใช้ navigate แทน reload เพื่อ clear location.state
-          navigate("/sale/ticket", { replace: true });
           window.location.reload();
         }
       } else {
@@ -690,7 +492,6 @@ const SaleTicket = () => {
       alert(`เกิดข้อผิดพลาด: ${error.message}`);
     } finally {
       setLoading(false);
-      setIsGeneratingInvoice(false);
     }
   };
 
@@ -715,26 +516,16 @@ const SaleTicket = () => {
       salesName: "",
       supplier: "",
       supplierName: "",
-      ticketType: "",
-      paymentMethod: "",
-      companyPaymentDetails: "",
-      customerPayment: "",
-      customerPaymentDetails: "",
+      remark: "",
       vatPercent: "0",
     });
 
-    updatePricing("adult", "net", "", 0);
-    updatePricing("adult", "sale", "", 0);
-    updatePricing("adult", "pax", 0, 0);
-    updatePricing("child", "net", "", 0);
-    updatePricing("child", "sale", "", 0);
-    updatePricing("child", "pax", 0, 0);
-    updatePricing("infant", "net", "", 0);
-    updatePricing("infant", "sale", "", 0);
-    updatePricing("infant", "pax", 0, 0);
+    updatePricing("adt1", "net", "", 0);
+    updatePricing("adt1", "sale", "", 0);
+    updatePricing("adt1", "pax", 0, 0);
 
     setPassengers([
-      { id: 1, name: "", type: "ADT", ticketNumber: "", ticketCode: "" },
+      { id: 1, name: "", type: "ADT1", ticketNumber: "", ticketCode: "" },
     ]);
     setRoutes([
       {
@@ -748,24 +539,12 @@ const SaleTicket = () => {
         arrival: "",
       },
     ]);
-    setExtras([
-      {
-        id: 1,
-        description: "",
-        net_price: "",
-        sale_price: "",
-        quantity: 1,
-        total_amount: "",
-      },
-    ]);
     setSelectedCustomer(null);
     setValidationErrors({});
     setGlobalEditMode(true);
   };
 
-  const calculatedSubtotal =
-    calculateSubtotal() +
-    extras.reduce((sum, item) => sum + parseFloat(item.total_amount || 0), 0);
+  const calculatedSubtotal = calculateSubtotal();
   const calculatedVatAmount =
     (calculatedSubtotal * parseFloat(formData.vatPercent || 0)) / 100;
   const calculatedTotal = calculatedSubtotal + calculatedVatAmount;
@@ -792,28 +571,15 @@ const SaleTicket = () => {
             <div className={SaleStyles.header.buttonContainer}>
               <button
                 type="submit"
-                className={SaleStyles.button.primary}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading && !isGeneratingInvoice ? (
-                  <span>กำลังบันทึก...</span>
+                {loading ? (
+                  <span>กำลังบันทึกและออก INV...</span>
                 ) : (
                   <>
-                    <FiSave className={SaleStyles.button.icon} /> บันทึก
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => handleSubmit(e, true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading && isGeneratingInvoice ? (
-                  <span>กำลังออก INV...</span>
-                ) : (
-                  <>
-                    <FiFileText className={SaleStyles.button.icon} /> ออก INV
+                    <FiFileText className={SaleStyles.button.icon} />{" "}
+                    บันทึกและออก INV
                   </>
                 )}
               </button>
@@ -826,7 +592,7 @@ const SaleTicket = () => {
                 <h2
                   className={combineClasses(
                     "text-lg font-semibold border-b pb-2",
-                    SaleStyles.spacing.mb4
+                    SaleStyles.spacing.mb4,
                   )}
                 >
                   ข้อมูลลูกค้า
@@ -845,7 +611,7 @@ const SaleTicket = () => {
                 <h2
                   className={combineClasses(
                     "text-lg font-semibold border-b pb-2",
-                    SaleStyles.spacing.mb4
+                    SaleStyles.spacing.mb4,
                   )}
                 >
                   ราคาและวันที่
@@ -909,24 +675,19 @@ const SaleTicket = () => {
                   >
                     <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
                   </svg>
-                  ประเภทตั๋วและเส้นทางการเดินทาง
+                  เส้นทางการเดินทาง
                 </h2>
               </div>
               <div className="grid grid-cols-10 gap-2">
                 <RouteSection routes={routes} setRoutes={setRoutes} />
-                <TicketTypeSection
-                  formData={formData}
-                  setFormData={setFormData}
-                />
               </div>
             </div>
 
-            <ExtrasSection extras={extras} setExtras={setExtras} />
             <PricingSummarySection
               pricing={pricing}
               updatePricing={updatePricing}
               setFormData={setFormData}
-              extras={extras}
+              extras={[]}
               actualVatPercent={formData.vatPercent}
             />
 
@@ -940,127 +701,56 @@ const SaleTicket = () => {
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
-                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
                       <path
                         fillRule="evenodd"
-                        d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                        d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
                         clipRule="evenodd"
                       />
                     </svg>
-                    การชำระเงิน
+                    Remark
                   </h2>
                 </div>
                 <div className={SaleStyles.subsection.content}>
-                  <div className={SaleStyles.grid.twoColumns}>
-                    <PaymentMethodSection
-                      title="การชำระเงินของบริษัท"
-                      sectionType="company"
-                      fieldName="paymentMethod"
-                      detailsFieldName="companyPaymentDetails"
-                      options={[
-                        {
-                          id: "creditCardCompany",
-                          value: "creditCard",
-                          label: "เครดิตการ์ด",
-                        },
-                        {
-                          id: "bankTransferCompany",
-                          value: "bankTransfer",
-                          label: "โอนเงินผ่านธนาคาร",
-                        },
-                        {
-                          id: "cashCompany",
-                          value: "cash",
-                          label: "เงินสด",
-                        },
-                        { id: "otherCompany", value: "other", label: "อื่น ๆ" },
-                      ]}
-                      formData={formData}
-                      setFormData={setFormData}
-                      detailPlaceholder="รายละเอียดการชำระเงิน"
-                    />
-                    <PaymentMethodSection
-                      title="การชำระเงินของลูกค้า"
-                      sectionType="customer"
-                      fieldName="customerPayment"
-                      detailsFieldName="customerPaymentDetails"
-                      options={[
-                        {
-                          id: "creditCardCustomer",
-                          value: "creditCard",
-                          label: "เครดิตการ์ด VISA / MSTR / AMEX / JCB",
-                        },
-                        {
-                          id: "bankTransferCustomer",
-                          value: "bankTransfer",
-                          label: "โอนเงินผ่านธนาคาร",
-                        },
-                        {
-                          id: "cashCustomer",
-                          value: "cash",
-                          label: "เงินสด",
-                        },
-                        {
-                          id: "creditCustomer",
-                          value: "credit",
-                          label: "เครดิต",
-                        },
-                      ]}
-                      formData={formData}
-                      setFormData={setFormData}
-                      detailPlaceholder="รายละเอียดการชำระเงิน"
-                    />
-                  </div>
+                  <textarea
+                    className="w-full border border-gray-400 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 min-h-[80px]"
+                    placeholder="กรอกหมายเหตุ (ข้อมูลนี้จะแสดงใน Invoice และ Receipt)"
+                    value={formData.remark || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        remark: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
               </section>
             </div>
           </div>
-          {/* ปุ่มบันทึกด้านล่าง */}
+          {/* ปุ่มบันทึกและออก INV ด้านล่าง */}
           <div
             className={combineClasses(
               SaleStyles.section.container,
-              "border-t-2 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-6"
+              "border-t-2 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-6",
             )}
           >
             <div className="flex justify-center gap-4">
               <button
-                type="button"
-                onClick={(e) => handleSubmit(e, true)}
+                type="submit"
                 className={combineClasses(
-                  "px-8 py-3 bg-blue-500 text-white rounded-lg flex items-center hover:bg-blue-600 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200",
-                  loading ? "opacity-50 cursor-not-allowed" : ""
+                  "px-8 py-3 bg-green-600 text-white rounded-lg flex items-center hover:bg-green-700 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200",
+                  loading ? "opacity-50 cursor-not-allowed" : "",
                 )}
                 disabled={loading}
               >
-                {loading && isGeneratingInvoice ? (
+                {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                    <span>กำลังออก INV...</span>
+                    <span>กำลังบันทึกและออก INV...</span>
                   </>
                 ) : (
                   <>
                     <FiFileText className="mr-2" size={20} />
-                    ออก INV
-                  </>
-                )}
-              </button>
-              <button
-                type="submit"
-                className={combineClasses(
-                  "px-8 py-3 bg-green-500 text-white rounded-lg flex items-center hover:bg-green-600 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200",
-                  loading ? "opacity-50 cursor-not-allowed" : ""
-                )}
-                disabled={loading}
-              >
-                {loading && !isGeneratingInvoice ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                    <span>กำลังบันทึก...</span>
-                  </>
-                ) : (
-                  <>
-                    <FiSave className="mr-2" size={20} />
-                    บันทึกข้อมูลตั๋วเครื่องบิน
+                    บันทึกและออก INV
                   </>
                 )}
               </button>

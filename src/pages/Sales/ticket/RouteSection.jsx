@@ -80,7 +80,7 @@ const RouteSection = ({
 
   return (
     <section
-      className={combineClasses(SaleStyles.subsection.container, "col-span-7")}
+      className={combineClasses(SaleStyles.subsection.container, "col-span-10")}
     >
       <div className={SaleStyles.subsection.header}>
         <h2 className={SaleStyles.subsection.title}>

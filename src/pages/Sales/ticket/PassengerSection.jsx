@@ -14,35 +14,13 @@ const PassengerSection = ({
   // ✅ เพิ่ม useRef เพื่อตรวจสอบว่า component mount แล้วหรือยัง (ป้องกัน auto-update ครั้งแรก)
   const isMounted = useRef(false);
 
-  // เพิ่มประเภทผู้โดยสาร
-  const passengerTypes = [
-    { value: "ADT", label: "ผู้ใหญ่ (ADT)", priceField: "adult" },
-    { value: "CHD", label: "เด็ก (CHD)", priceField: "child" },
-    { value: "INF", label: "ทารก (INF)", priceField: "infant" },
-  ];
-
   const updatePassengerCount = (passengersList) => {
-    const adultCount = passengersList.filter((p) => p.type === "ADT").length;
-    const childCount = passengersList.filter((p) => p.type === "CHD").length;
-    const infantCount = passengersList.filter((p) => p.type === "INF").length;
+    const adultCount = passengersList.length;
 
-    console.log("PassengerSection: Updating counts:", {
-      adultCount,
-      childCount,
-      infantCount,
-    });
-
-    const adultSale = pricing?.adult?.sale || 0;
-    const childSale = pricing?.child?.sale || 0;
-    const infantSale = pricing?.infant?.sale || 0;
-
+    const adultSale = pricing?.adt1?.sale || 0;
     const adultTotal = adultCount * parseFloat(adultSale);
-    const childTotal = childCount * parseFloat(childSale);
-    const infantTotal = infantCount * parseFloat(infantSale);
 
-    updatePricing("adult", "pax", adultCount, adultTotal);
-    updatePricing("child", "pax", childCount, childTotal);
-    updatePricing("infant", "pax", infantCount, infantTotal);
+    updatePricing("adt1", "pax", adultCount, adultTotal);
   };
 
   // ✅ แก้ไข: ไม่ auto-update Pax ถ้าอยู่ใน readOnly mode หรือครั้งแรกที่ component mount
@@ -56,17 +34,16 @@ const PassengerSection = ({
 
   // ✅ แก้ไข: ไม่ auto-update Pax ถ้าอยู่ใน readOnly mode หรือครั้งแรกที่ component mount
   useEffect(() => {
-    console.log("Pricing changed:", pricing);
     if (pricing && !readOnly && isMounted.current) {
       updatePassengerCount(passengers);
     }
-  }, [pricing.adult?.sale, pricing.child?.sale, pricing.infant?.sale, readOnly]);
+  }, [pricing.adt1?.sale, readOnly]);
 
   const addPassenger = () => {
     const newPassenger = {
       id: passengers.length + 1,
       name: "",
-      type: "ADT",
+      type: "ADT1",
       ticketNumber: formData.supplierNumericCode || "",
       ticketCode: "",
     };
@@ -93,16 +70,6 @@ const PassengerSection = ({
       setPassengers(updatedPassengers);
       updatePassengerCount(updatedPassengers);
     }
-  };
-
-  const handleTypeChange = (index, newType) => {
-    const updatedPassengers = [...passengers];
-    updatedPassengers[index].type = newType;
-    setPassengers(updatedPassengers);
-
-    setTimeout(() => {
-      updatePassengerCount(updatedPassengers);
-    }, 0);
   };
 
   // ฟังก์ชันจัดการการเปลี่ยนแปลงเลขที่ตั๋ว
@@ -174,11 +141,10 @@ const PassengerSection = ({
             )}
           >
             <div
-              className={combineClasses("col-span-13", SaleStyles.spacing.ml4)}
+              className={combineClasses("col-span-16", SaleStyles.spacing.ml4)}
             >
               ชื่อผู้โดยสาร
             </div>
-            <div className="col-span-3 text-center">ประเภท</div>
             <div className="col-span-3 text-center">เลขที่ตั๋ว</div>
           </div>
           {passengers.map((passenger, index) => (
@@ -189,7 +155,7 @@ const PassengerSection = ({
                 SaleStyles.spacing.mb2
               )}
             >
-              <div className="flex col-span-13">
+              <div className="flex col-span-16">
                 <div
                   className={combineClasses(
                     "w-[16px] flex items-center justify-center",
@@ -210,27 +176,6 @@ const PassengerSection = ({
                   data-passenger-name={index}
                   disabled={readOnly}
                 />
-              </div>
-              <div className="col-span-3">
-                <select
-                  className={combineClasses(
-                    SaleStyles.form.select,
-                    "text-center w-full px-0 passenger-type-select"
-                  )}
-                  value={passenger.type || "ADT"}
-                  onChange={(e) => handleTypeChange(index, e.target.value)}
-                  disabled={readOnly}
-                >
-                  {passengerTypes.map((type) => (
-                    <option
-                      key={type.value}
-                      value={type.value}
-                      className="text-center"
-                    >
-                      {type.value}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div className="col-span-3">
                 {index === 0 ? (

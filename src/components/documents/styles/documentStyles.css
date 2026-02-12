@@ -439,15 +439,9 @@
 
 .print-passenger-grid {
   display: grid !important;
-  grid-template-columns: 10px minmax(240px, max-content) 40px 30px 120px !important;
+  grid-template-columns: 10px 1fr !important;
   gap: 8px !important;
   align-items: center !important;
-}
-
-/* เอาการจัดการ text overflow ออก */
-.passenger-name {
-  text-align: left !important;
-  white-space: nowrap; /* ไม่ให้ขึ้นบรรทัดใหม่ */
 }
 
 .passenger-index {
@@ -456,19 +450,7 @@
 
 .passenger-name {
   text-align: left !important;
-}
-
-.passenger-age {
-  text-align: left !important;
-}
-
-.passenger-ticket {
-  text-align: left !important;
-}
-
-.passenger-code {
-  text-align: left !important;
-  white-space: nowrap !important;
+  white-space: nowrap;
 }
 
 /* ใหม่: สำหรับแสดง Airline + Passenger Type */
@@ -862,7 +844,7 @@
 }
 
 /* ===========================================
-   Multi PO Receipt Table Styles
+   Multi INV Receipt Table Styles
    =========================================== */
 
 .multi-po-receipt-table th {

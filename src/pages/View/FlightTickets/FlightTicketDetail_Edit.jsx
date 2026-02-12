@@ -15,11 +15,9 @@ import {
 import { useAlertDialogContext } from "../../../contexts/AlertDialogContext";
 import usePricing from "../../../hooks/usePricing";
 import SaleStyles, { combineClasses } from "../../Sales/common/SaleStyles";
-import PaymentMethodSection from "../../Sales/common/PaymentMethodSection";
 import PassengerSection from "../../Sales/ticket/PassengerSection";
 import SupplierSection from "../../Sales/common/SupplierSection";
 import RouteSection from "../../Sales/ticket/RouteSection";
-import TicketTypeSection from "../../Sales/ticket/TicketTypeSection";
 import ExtrasSection from "../../Sales/ticket/ExtrasSection";
 import PricingSummarySection from "../../Sales/ticket/PricingSummarySection";
 import SaleHeader from "../../Sales/common/SaleHeader";
@@ -81,11 +79,12 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
     b2bDetails: "",
     otherDetails: "",
     tgDetails: "",
+    remark: "",
   });
 
   // Components state matching SaleTicket
   const [passengers, setPassengers] = useState([
-    { id: 1, name: "", type: "ADT", ticketNumber: "", ticketCode: "" },
+    { id: 1, name: "", type: "ADT1", ticketNumber: "", ticketCode: "" },
   ]);
 
   const [routes, setRoutes] = useState([
@@ -204,25 +203,26 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
         additional.ticket_type?.toLowerCase() === "tg"
           ? additional.ticket_type_details || ""
           : "",
+      remark: additional.remark || "",
     });
 
     // Map pricing - แก้ไขการคำนวณ total ให้ถูกต้อง
-    const adultTotal =
-      (pricingData.adult_sale_price || 0) * (pricingData.adult_pax || 0);
-    const childTotal =
-      (pricingData.child_sale_price || 0) * (pricingData.child_pax || 0);
-    const infantTotal =
-      (pricingData.infant_sale_price || 0) * (pricingData.infant_pax || 0);
+    const adt1Total =
+      (pricingData.adt1_sale_price || 0) * (pricingData.adt1_pax || 0);
+    const adt2Total =
+      (pricingData.adt2_sale_price || 0) * (pricingData.adt2_pax || 0);
+    const adt3Total =
+      (pricingData.adt3_sale_price || 0) * (pricingData.adt3_pax || 0);
 
-    updatePricing("adult", "net", pricingData.adult_net_price || 0, 0);
-    updatePricing("adult", "sale", pricingData.adult_sale_price || 0, 0);
-    updatePricing("adult", "pax", pricingData.adult_pax || 0, adultTotal);
-    updatePricing("child", "net", pricingData.child_net_price || 0, 0);
-    updatePricing("child", "sale", pricingData.child_sale_price || 0, 0);
-    updatePricing("child", "pax", pricingData.child_pax || 0, childTotal);
-    updatePricing("infant", "net", pricingData.infant_net_price || 0, 0);
-    updatePricing("infant", "sale", pricingData.infant_sale_price || 0, 0);
-    updatePricing("infant", "pax", pricingData.infant_pax || 0, infantTotal);
+    updatePricing("adt1", "net", pricingData.adt1_net_price || 0, 0);
+    updatePricing("adt1", "sale", pricingData.adt1_sale_price || 0, 0);
+    updatePricing("adt1", "pax", pricingData.adt1_pax || 0, adt1Total);
+    updatePricing("adt2", "net", pricingData.adt2_net_price || 0, 0);
+    updatePricing("adt2", "sale", pricingData.adt2_sale_price || 0, 0);
+    updatePricing("adt2", "pax", pricingData.adt2_pax || 0, adt2Total);
+    updatePricing("adt3", "net", pricingData.adt3_net_price || 0, 0);
+    updatePricing("adt3", "sale", pricingData.adt3_sale_price || 0, 0);
+    updatePricing("adt3", "pax", pricingData.adt3_pax || 0, adt3Total);
 
     // Map passengers
     const mappedPassengers = ticket.tickets_passengers?.length
@@ -233,7 +233,7 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
           ticketNumber: p.ticket_number || "",
           ticketCode: p.ticket_code || "",
         }))
-      : [{ id: 1, name: "", type: "ADT", ticketNumber: "", ticketCode: "" }];
+      : [{ id: 1, name: "", type: "ADT1", ticketNumber: "", ticketCode: "" }];
     setPassengers(mappedPassengers);
 
     // Map routes
@@ -571,22 +571,23 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
           company_payment_details: formData.companyPaymentDetails || "",
           customer_payment_method: formData.customerPayment || "",
           customer_payment_details: formData.customerPaymentDetails || "",
+          remark: formData.remark || "",
         },
 
         // Pricing data
         pricing: {
-          adult_net_price: parseFloat(pricing.adult?.net || 0),
-          adult_sale_price: parseFloat(pricing.adult?.sale || 0),
-          adult_pax: parseInt(pricing.adult?.pax || 0),
-          adult_total: parseFloat(pricing.adult?.total || 0),
-          child_net_price: parseFloat(pricing.child?.net || 0),
-          child_sale_price: parseFloat(pricing.child?.sale || 0),
-          child_pax: parseInt(pricing.child?.pax || 0),
-          child_total: parseFloat(pricing.child?.total || 0),
-          infant_net_price: parseFloat(pricing.infant?.net || 0),
-          infant_sale_price: parseFloat(pricing.infant?.sale || 0),
-          infant_pax: parseInt(pricing.infant?.pax || 0),
-          infant_total: parseFloat(pricing.infant?.total || 0),
+          adt1_net_price: parseFloat(pricing.adt1?.net || 0),
+          adt1_sale_price: parseFloat(pricing.adt1?.sale || 0),
+          adt1_pax: parseInt(pricing.adt1?.pax || 0),
+          adt1_total: parseFloat(pricing.adt1?.total || 0),
+          adt2_net_price: parseFloat(pricing.adt2?.net || 0),
+          adt2_sale_price: parseFloat(pricing.adt2?.sale || 0),
+          adt2_pax: parseInt(pricing.adt2?.pax || 0),
+          adt2_total: parseFloat(pricing.adt2?.total || 0),
+          adt3_net_price: parseFloat(pricing.adt3?.net || 0),
+          adt3_sale_price: parseFloat(pricing.adt3?.sale || 0),
+          adt3_pax: parseInt(pricing.adt3?.pax || 0),
+          adt3_total: parseFloat(pricing.adt3?.total || 0),
           vat_percent: parseFloat(formData.vatPercent) || 0,
           vat_amount: calculatedVatAmount,
           total_amount: calculatedTotal,
@@ -770,7 +771,7 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
         {/* Header */}
         <div className="bg-blue-600 px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h1 className="text-xl font-bold">
-            แก้ไขตั๋วเครื่องบิน: {ticketData.reference_number}
+            แก้ไขตั๋วเครื่องบิน: {ticketData.invoice_number || ticketData.reference_number}
           </h1>
           <button
             onClick={onClose}
@@ -867,23 +868,18 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
               </div>
             </div>
 
-            {/* Routes & Ticket Type */}
+            {/* Routes */}
             <div className={SaleStyles.section.container}>
               <div className={SaleStyles.section.headerWrapper}>
                 <h2 className={SaleStyles.section.headerTitle}>
-                  ประเภทตั๋วและเส้นทางการเดินทาง
+                  เส้นทางการเดินทาง
                 </h2>
               </div>
-              <div className="grid grid-cols-10 gap-2">
+              <div>
                 <RouteSection
                   routes={routes}
                   setRoutes={setRoutes}
-                  readOnly={false} // เปลี่ยนเป็น false
-                />
-                <TicketTypeSection
-                  formData={formData}
-                  setFormData={setFormData}
-                  readOnly={false} // เปลี่ยนเป็น false
+                  readOnly={false}
                 />
               </div>
             </div>
@@ -907,69 +903,42 @@ const FlightTicketDetail_Edit = ({ ticketId, onClose, onSave }) => {
               actualVatPercent={parseFloat(formData.vatPercent || 0)}
             />
 
-            {/* Payment Methods */}
+            {/* Remark */}
             <div className={SaleStyles.section.container}>
-              <div className={SaleStyles.section.headerWrapper2}>
-                <h2 className={SaleStyles.section.headerTitle}>การชำระเงิน</h2>
-              </div>
-              <div className={SaleStyles.subsection.content}>
-                <div className={SaleStyles.grid.twoColumns}>
-                  <PaymentMethodSection
-                    title="การชำระเงินของบริษัท"
-                    sectionType="company"
-                    fieldName="paymentMethod"
-                    detailsFieldName="companyPaymentDetails"
-                    options={[
-                      {
-                        id: "creditCardCompany",
-                        value: "creditCard",
-                        label: "เครดิตการ์ด",
-                      },
-                      {
-                        id: "bankTransferCompany",
-                        value: "bankTransfer",
-                        label: "โอนเงินผ่านธนาคาร",
-                      },
-                      { id: "cashCompany", value: "cash", label: "เงินสด" },
-                      { id: "otherCompany", value: "other", label: "อื่น ๆ" },
-                    ]}
-                    formData={formData}
-                    setFormData={setFormData}
-                    detailPlaceholder="รายละเอียดการชำระเงิน"
-                    readOnly={false} // เพิ่ม readOnly={false}
-                  />
-
-                  <PaymentMethodSection
-                    title="การชำระเงินของลูกค้า"
-                    sectionType="customer"
-                    fieldName="customerPayment"
-                    detailsFieldName="customerPaymentDetails"
-                    options={[
-                      {
-                        id: "creditCardCustomer",
-                        value: "creditCard",
-                        label: "เครดิตการ์ด VISA / MSTR / AMEX / JCB",
-                      },
-                      {
-                        id: "bankTransferCustomer",
-                        value: "bankTransfer",
-                        label: "โอนเงินผ่านธนาคาร",
-                      },
-                      { id: "cashCustomer", value: "cash", label: "เงินสด" },
-                      {
-                        id: "creditCustomer",
-                        value: "credit",
-                        label: "เครดิต",
-                      },
-                    ]}
-                    formData={formData}
-                    setFormData={setFormData}
-                    detailPlaceholder="รายละเอียดการชำระเงิน"
-                    readOnly={false} // เพิ่ม readOnly={false}
+              <section className={SaleStyles.subsection.container}>
+                <div className={SaleStyles.section.headerWrapper2}>
+                  <h2 className={SaleStyles.section.headerTitle}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Remark
+                  </h2>
+                </div>
+                <div className={SaleStyles.subsection.content}>
+                  <textarea
+                    className="w-full border border-gray-400 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 min-h-[80px]"
+                    placeholder="กรอกหมายเหตุ (ข้อมูลนี้จะแสดงใน Invoice และ Receipt)"
+                    value={formData.remark || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        remark: e.target.value,
+                      }))
+                    }
                   />
                 </div>
-              </div>
+              </section>
             </div>
+
           </div>
 
           {/* Footer */}

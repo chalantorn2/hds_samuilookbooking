@@ -11,7 +11,7 @@ import { getSuppliers } from "../../services/supplierService";
 import * as XLSX from "xlsx";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
 
 // Helper function to parse routing_detail string to routes array
 const parseRoutingDetail = (routingDetail) => {
@@ -131,7 +131,7 @@ const AllInvoiceReport = () => {
         action: "getAllInvoiceReportNew",
         start_date: startDate,
         end_date: endDate,
-        document_types: ["PO", "VC", "HTL", "TRN", "VSA", "OTH"], // แสดง PO, VC, HTL, TRN, VSA, OTH (ไม่รวม Deposit, FT, BS, BT, TR)
+        document_types: ["INV", "VC", "HTL", "TRN", "VSA", "OTH"], // แสดง INV, VC, HTL, TRN, VSA, OTH (ไม่รวม Deposit, FT, BS, BT, TR)
         filter_type: filterType,
       };
 
@@ -238,7 +238,7 @@ const AllInvoiceReport = () => {
       exportData.push([`Date: ${format(new Date(day.date), "dd/MM/yyyy")}`]);
       exportData.push([
         "Date",
-        "Inv/PO Number",
+        "INV Number",
         "Customer Code",
         "Supplier Code",
         "TYPE",
@@ -408,8 +408,6 @@ const AllInvoiceReport = () => {
                 >
                   <option value="all">All Invoice</option>
                   <option value="customer">by Customer</option>
-                  <option value="supplier">by Supplier</option>
-                  <option value="ticket_type">by Ticket Type</option>
                 </select>
               </div>
 
@@ -561,7 +559,7 @@ const AllInvoiceReport = () => {
                               Date
                             </th>
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase whitespace-nowrap">
-                              Ref No.
+                              INV Number
                             </th>
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase whitespace-nowrap">
                               CUST

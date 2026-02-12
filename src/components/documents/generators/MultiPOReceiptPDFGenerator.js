@@ -1,5 +1,5 @@
 // src/components/documents/generators/MultiPOReceiptPDFGenerator.js
-// PDF Generator สำหรับ Multi PO Receipt
+// PDF Generator สำหรับ Multi INV Receipt
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { numberToEnglishText } from "../services/documentDataMapper";
@@ -21,13 +21,13 @@ import {
 } from "./InvoicePDFGenerator";
 
 /**
- * สร้าง Multi PO Receipt PDF
+ * สร้าง Multi INV Receipt PDF
  * แตกต่างจาก Receipt ธรรมดาตรงที่แสดงรายการ PO แทนที่จะเป็น Passengers
  */
 export const generateMultiPOReceiptPDF = async (receiptData, ticketId) => {
   try {
     console.log(
-      "Starting Multi PO Receipt PDF generation for ticket:",
+      "Starting Multi INV Receipt PDF generation for ticket:",
       ticketId
     );
 
@@ -51,7 +51,7 @@ export const generateMultiPOReceiptPDF = async (receiptData, ticketId) => {
 
     container.appendChild(printWrapper);
 
-    // สร้างเนื้อหา Multi PO Receipt (ใช้หน้าเดียว)
+    // สร้างเนื้อหา Multi INV Receipt (ใช้หน้าเดียว)
     const printContent = createMultiPOReceiptHTML(receiptData);
     printWrapper.innerHTML = printContent;
 
@@ -109,22 +109,22 @@ export const generateMultiPOReceiptPDF = async (receiptData, ticketId) => {
 
     if (fileSizeInMB > 10) {
       throw new Error(
-        `ไฟล์ Multi PO Receipt PDF ใหญ่เกิน 10MB (${fileSizeInMB.toFixed(2)} MB)`
+        `ไฟล์ Multi INV Receipt PDF ใหญ่เกิน 10MB (${fileSizeInMB.toFixed(2)} MB)`
       );
     }
 
-    console.log("Multi PO Receipt PDF generated successfully");
+    console.log("Multi INV Receipt PDF generated successfully");
     return pdfBase64;
   } catch (error) {
-    console.error("Error generating Multi PO Receipt PDF:", error);
+    console.error("Error generating Multi INV Receipt PDF:", error);
     throw new Error(
-      `ไม่สามารถสร้าง Multi PO Receipt PDF ได้: ${error.message}`
+      `ไม่สามารถสร้าง Multi INV Receipt PDF ได้: ${error.message}`
     );
   }
 };
 
 /**
- * สร้าง HTML สำหรับ Multi PO Receipt (หน้าเดียว)
+ * สร้าง HTML สำหรับ Multi INV Receipt (หน้าเดียว)
  */
 const createMultiPOReceiptHTML = (receiptData) => {
   return `
@@ -140,7 +140,7 @@ const createMultiPOReceiptHTML = (receiptData) => {
 };
 
 /**
- * สร้าง Header สำหรับ Multi PO Receipt
+ * สร้าง Header สำหรับ Multi INV Receipt
  */
 const renderMultiPOReceiptHeader = (receiptData) => {
   const customerName = getDisplayCustomerName(receiptData);
@@ -233,13 +233,13 @@ const formatDate = (dateString) => {
 };
 
 /**
- * สร้างตารางสำหรับ Multi PO Receipt - แสดงรายการ PO
+ * สร้างตารางสำหรับ Multi INV Receipt - แสดงรายการ PO
  */
 const renderMultiPOReceiptTable = (receiptData) => {
   const MIN_ROWS = 15;
   const selectedPOs = receiptData.selectedPOs || [];
 
-  // เรียงลำดับ PO ตามเลขที่
+  // เรียงลำดับ INV ตามเลขที่
   const sortedPOs = selectedPOs.slice().sort((a, b) => {
     const poA = a.po_number || "";
     const poB = b.po_number || "";
@@ -351,7 +351,7 @@ const renderMultiPOReceiptTable = (receiptData) => {
 };
 
 /**
- * สร้าง Footer สำหรับ Multi PO Receipt
+ * สร้าง Footer สำหรับ Multi INV Receipt
  */
 const renderMultiPOReceiptFooter = (receiptData) => {
   // Format วันที่แบบ DD/MM/YY
@@ -371,8 +371,16 @@ const renderMultiPOReceiptFooter = (receiptData) => {
 
   const updatedByName = receiptData?.updatedByName || null;
   const formattedDate = getFormattedIssueDate();
+  const remark = receiptData?.remark || "";
 
   return `
+    ${remark ? `
+    <!-- Remark -->
+    <div style="margin: 8px 0; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+      <strong>Remark:</strong> ${remark}
+    </div>
+    ` : ""}
+
     <div class="print-bottom-section">
       <div class="print-spacer"></div>
 
@@ -401,7 +409,7 @@ const renderMultiPOReceiptFooter = (receiptData) => {
 };
 
 /**
- * CSS Styles สำหรับ Multi PO Receipt
+ * CSS Styles สำหรับ Multi INV Receipt
  */
 const getMultiPOReceiptStyles = () => {
   return `
@@ -565,7 +573,7 @@ const getMultiPOReceiptStyles = () => {
       vertical-align: middle;
     }
 
-    /* Multi PO Receipt Table Specific Styles */
+    /* Multi INV Receipt Table Specific Styles */
     .multi-po-receipt-table .print-th-no {
       width: 4%;
       text-align: center;
@@ -731,7 +739,7 @@ const getMultiPOReceiptStyles = () => {
 };
 
 /**
- * สร้าง Multi PO Receipt PDF พร้อมจัดการ error
+ * สร้าง Multi INV Receipt PDF พร้อมจัดการ error
  */
 export async function generateMultiPOReceiptPDFSafely(receiptData, ticketId) {
   try {
@@ -740,15 +748,15 @@ export async function generateMultiPOReceiptPDFSafely(receiptData, ticketId) {
     return {
       success: true,
       pdfBase64: pdfBase64,
-      message: "สร้าง Multi PO Receipt PDF สำเร็จ",
+      message: "สร้าง Multi INV Receipt PDF สำเร็จ",
     };
   } catch (error) {
-    console.error("Multi PO Receipt PDF generation failed:", error);
+    console.error("Multi INV Receipt PDF generation failed:", error);
 
     return {
       success: false,
       error: error.message,
-      message: "ไม่สามารถสร้าง Multi PO Receipt PDF ได้",
+      message: "ไม่สามารถสร้าง Multi INV Receipt PDF ได้",
     };
   }
 }

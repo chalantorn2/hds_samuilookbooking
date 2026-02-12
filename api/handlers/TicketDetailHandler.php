@@ -267,6 +267,7 @@ class TicketDetailHandler extends BaseHandler
                 'cancel_reason' => $ticket['cancel_reason'],
                 'po_number' => $ticket['po_number'],
                 'po_generated_at' => $ticket['po_generated_at'],
+                'invoice_number' => $ticket['invoice_number'],
 
                 // Customer data (structured for editing)
                 'customer' => $ticket['customer_id'] ? [
@@ -314,7 +315,8 @@ class TicketDetailHandler extends BaseHandler
                     'customer_payment_details' => $ticket['customer_payment_details'],
                     'code' => $ticket['code'],
                     'ticket_type' => $ticket['ticket_type'],
-                    'ticket_type_details' => $ticket['ticket_type_details']
+                    'ticket_type_details' => $ticket['ticket_type_details'],
+                    'remark' => $ticket['remark'] ?? ''
                 ]],
 
                 // Related arrays for editing
@@ -579,6 +581,7 @@ class TicketDetailHandler extends BaseHandler
         if (isset($additionalData['company_payment_details'])) $updateData['company_payment_details'] = $additionalData['company_payment_details'];
         if (isset($additionalData['customer_payment_method'])) $updateData['customer_payment_method'] = $additionalData['customer_payment_method'];
         if (isset($additionalData['customer_payment_details'])) $updateData['customer_payment_details'] = $additionalData['customer_payment_details'];
+        if (array_key_exists('remark', $additionalData)) $updateData['remark'] = $additionalData['remark'];
 
         if (!empty($updateData)) {
             $this->db->update('ticket_additional_info', $updateData, 'bookings_ticket_id = :id', ['id' => $ticketId]);
@@ -592,23 +595,23 @@ class TicketDetailHandler extends BaseHandler
     {
         $updateData = [];
 
-        // Adult pricing
-        if (isset($pricingData['adult_net_price'])) $updateData['adult_net_price'] = $pricingData['adult_net_price'];
-        if (isset($pricingData['adult_sale_price'])) $updateData['adult_sale_price'] = $pricingData['adult_sale_price'];
-        if (isset($pricingData['adult_pax'])) $updateData['adult_pax'] = $pricingData['adult_pax'];
-        if (isset($pricingData['adult_total'])) $updateData['adult_total'] = $pricingData['adult_total'];
+        // ADT1 pricing
+        if (isset($pricingData['adt1_net_price'])) $updateData['adt1_net_price'] = $pricingData['adt1_net_price'];
+        if (isset($pricingData['adt1_sale_price'])) $updateData['adt1_sale_price'] = $pricingData['adt1_sale_price'];
+        if (isset($pricingData['adt1_pax'])) $updateData['adt1_pax'] = $pricingData['adt1_pax'];
+        if (isset($pricingData['adt1_total'])) $updateData['adt1_total'] = $pricingData['adt1_total'];
 
-        // Child pricing
-        if (isset($pricingData['child_net_price'])) $updateData['child_net_price'] = $pricingData['child_net_price'];
-        if (isset($pricingData['child_sale_price'])) $updateData['child_sale_price'] = $pricingData['child_sale_price'];
-        if (isset($pricingData['child_pax'])) $updateData['child_pax'] = $pricingData['child_pax'];
-        if (isset($pricingData['child_total'])) $updateData['child_total'] = $pricingData['child_total'];
+        // ADT2 pricing
+        if (isset($pricingData['adt2_net_price'])) $updateData['adt2_net_price'] = $pricingData['adt2_net_price'];
+        if (isset($pricingData['adt2_sale_price'])) $updateData['adt2_sale_price'] = $pricingData['adt2_sale_price'];
+        if (isset($pricingData['adt2_pax'])) $updateData['adt2_pax'] = $pricingData['adt2_pax'];
+        if (isset($pricingData['adt2_total'])) $updateData['adt2_total'] = $pricingData['adt2_total'];
 
-        // Infant pricing
-        if (isset($pricingData['infant_net_price'])) $updateData['infant_net_price'] = $pricingData['infant_net_price'];
-        if (isset($pricingData['infant_sale_price'])) $updateData['infant_sale_price'] = $pricingData['infant_sale_price'];
-        if (isset($pricingData['infant_pax'])) $updateData['infant_pax'] = $pricingData['infant_pax'];
-        if (isset($pricingData['infant_total'])) $updateData['infant_total'] = $pricingData['infant_total'];
+        // ADT3 pricing
+        if (isset($pricingData['adt3_net_price'])) $updateData['adt3_net_price'] = $pricingData['adt3_net_price'];
+        if (isset($pricingData['adt3_sale_price'])) $updateData['adt3_sale_price'] = $pricingData['adt3_sale_price'];
+        if (isset($pricingData['adt3_pax'])) $updateData['adt3_pax'] = $pricingData['adt3_pax'];
+        if (isset($pricingData['adt3_total'])) $updateData['adt3_total'] = $pricingData['adt3_total'];
 
         // Totals
         if (isset($pricingData['vat_percent'])) $updateData['vat_percent'] = $pricingData['vat_percent'];

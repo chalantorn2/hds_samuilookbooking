@@ -10,7 +10,7 @@ class ApiClient {
   constructor() {
     // กำหนด base URL ของ API Gateway
     this.baseURL =
-      import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+      import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
     this.timeout = 30000; // 30 seconds timeout
   }
 

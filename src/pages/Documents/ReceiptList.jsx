@@ -382,7 +382,7 @@ const ReceiptList = () => {
                     >
                       {/* RC Number */}
                       <td className="pl-6 py-4 whitespace-nowrap text-sm font-normal text-blue-600">
-                        {/* แสดง * สีแดงถ้าเป็น MultiPOReceipt */}
+                        {/* แสดง * สีแดงถ้าเป็น MultiINVReceipt */}
                         {ticket.isMultiPOReceipt && (
                           <span className="text-red-600 font-bold mr-1">*</span>
                         )}

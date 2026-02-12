@@ -447,9 +447,9 @@
                     'end_date' => $endDate
                 ];
 
-                // Add PO Number filter for invoiced tickets only
+                // Add INV/PO Number filter for invoiced tickets only
                 if ($onlyInvoiced) {
-                    $sql .= " AND bt.po_number IS NOT NULL AND bt.po_number != ''";
+                    $sql .= " AND ((bt.invoice_number IS NOT NULL AND bt.invoice_number != '') OR (bt.po_number IS NOT NULL AND bt.po_number != ''))";
                 }
 
                 // Add status filter

@@ -7,8 +7,8 @@ import {
 } from "../services/documentDataMapper";
 
 /**
- * MultiPOReceiptTable - ตารางสำหรับ RC ที่รวมหลาย PO
- * โครงสร้างต่างจากเอกสารอื่นๆ แสดงรายการ PO แทนที่จะแสดง Passengers/Flights
+ * MultiPOReceiptTable - ตารางสำหรับ RC ที่รวมหลาย INV
+ * โครงสร้างต่างจากเอกสารอื่นๆ แสดงรายการ INV แทนที่จะแสดง Passengers/Flights
  */
 const MultiPOReceiptTable = ({ selectedPOs, summary }) => {
   const formatDate = (dateString) => {
@@ -34,7 +34,7 @@ const MultiPOReceiptTable = ({ selectedPOs, summary }) => {
           </tr>
         </thead>
         <tbody>
-          {/* แสดงรายการ PO ที่เลือก */}
+          {/* แสดงรายการ INV ที่เลือก */}
           {(() => {
             const MIN_ROWS = 15;
             const sortedPOs =

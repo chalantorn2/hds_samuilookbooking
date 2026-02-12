@@ -4,7 +4,6 @@ import Sidebar from "./components/layout/Sidebar";
 import Overview from "./pages/Overview";
 import SaleModule from "./pages/Sales";
 import Documents from "./pages/Documents/components/DocumentsModule";
-import ViewModule from "./pages/View";
 import Information from "./pages/Information";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
@@ -13,8 +12,6 @@ import PrivateRoute from "./pages/Login/PrivateRoute";
 import { AuthProvider } from "./pages/Login/AuthContext";
 import { AlertDialogProvider } from "./contexts/AlertDialogContext";
 import AdminDeleteTool from "./pages/Admin/AdminDeleteTool";
-import BusBoatTourView from "./pages/View/BusBoatTour/BusBoatTourView";
-import OtherServicesView from "./pages/View/OtherServices/OtherServicesView";
 import AllInvoiceReport from "./pages/Reports/AllInvoiceReport";
 import OutstandingReceivablesReport from "./pages/Reports/OutstandingReceivablesReport";
 
@@ -180,18 +177,6 @@ const App = () => {
                         <Route
                           path="/sale/other"
                           element={<SaleModule activeSubmenu="1.4" />}
-                        />
-                        <Route
-                          path="/view/flight-tickets"
-                          element={<ViewModule activeSubmenu="2.1" />}
-                        />
-                        <Route
-                          path="/view/bus-boat-tour"
-                          element={<BusBoatTourView />}
-                        />
-                        <Route
-                          path="/view/other-services"
-                          element={<OtherServicesView />}
                         />
                         <Route
                           path="/documents/invoice-list"

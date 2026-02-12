@@ -16,9 +16,9 @@ define('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdX
 
 // MySQL Database Configuration (Production)
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'samui_booking');
-define('DB_USER', 'samui_booking');
-define('DB_PASS', 'qB$6875sc');
+define('DB_NAME', 'samui_hds');
+define('DB_USER', 'samui_hds');
+define('DB_PASS', 'Bm7g&6x92');
 define('DB_CHARSET', 'utf8mb4');
 
 // ===========================================
@@ -34,8 +34,8 @@ define('API_MAX_REQUESTS_PER_MINUTE', 1000);
 define('CORS_ALLOWED_ORIGINS', [
     'http://localhost:3000',           // Development
     'http://localhost:5173',           // Vite dev server
-    'https://samuilookbiz.com',        // Production domain
-    'http://samuilookbiz.com',         // Production domain (HTTP)
+    'https://hds.samuilookbiz.com',    // Production domain
+    'http://hds.samuilookbiz.com',     // Production domain (HTTP)
     'https://203.170.190.137',         // Server IP (HTTPS)
     'http://203.170.190.137'           // Server IP (HTTP)
 ]);

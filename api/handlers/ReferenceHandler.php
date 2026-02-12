@@ -176,7 +176,7 @@ class ReferenceHandler extends BaseHandler
     private function generateRCForTicket()
     {
         $ticketId = $this->request['ticketId'] ?? null;
-        $linkedTicketIds = $this->request['linkedTicketIds'] ?? null;  // ⭐ Multi PO Receipt
+        $linkedTicketIds = $this->request['linkedTicketIds'] ?? null;  // ⭐ Multi INV Receipt
         $selectionData = $this->request['selectionData'] ?? null;      // ✅ Regular Receipt
         $allowOverwrite = $this->request['allowOverwrite'] ?? false;
 
@@ -191,10 +191,10 @@ class ReferenceHandler extends BaseHandler
         $ticketIds = $linkedTicketIds ? array_map('intval', $linkedTicketIds) : [$ticketId];
 
         try {
-            // ตรวจสอบทุก tickets
+            // ตรวจสอบทุก tickets - ✅ เพิ่ม invoice_number
             $placeholders = implode(',', array_fill(0, count($ticketIds), '?'));
             $checkResult = $this->db->raw(
-                "SELECT id, po_number, rc_number, rc_generated_at, status, customer_id
+                "SELECT id, po_number, invoice_number, rc_number, rc_generated_at, status, customer_id
                  FROM bookings_ticket
                  WHERE id IN ($placeholders)",
                 $ticketIds
@@ -210,14 +210,14 @@ class ReferenceHandler extends BaseHandler
             if (count($ticketIds) > 1) {
                 $customerIds = array_unique(array_column($tickets, 'customer_id'));
                 if (count($customerIds) > 1) {
-                    return $this->errorResponse('ไม่สามารถสร้าง RC จากหลาย PO ที่มี Customer ต่างกันได้', 400);
+                    return $this->errorResponse('ไม่สามารถสร้าง RC จากหลาย INV ที่มี Customer ต่างกันได้', 400);
                 }
             }
 
-            // ⭐ ตรวจสอบว่าทุก tickets ต้องมี PO Number ก่อน
+            // ⭐ ตรวจสอบว่าทุก tickets ต้องมี INV หรือ PO Number ก่อน
             foreach ($tickets as $ticket) {
-                if (!$ticket['po_number']) {
-                    return $this->errorResponse("ไม่สามารถสร้าง RC ได้ เนื่องจาก Ticket ID {$ticket['id']} ยังไม่มี PO Number", 400);
+                if (!$ticket['invoice_number'] && !$ticket['po_number']) {
+                    return $this->errorResponse("ไม่สามารถสร้าง RC ได้ เนื่องจาก Ticket ID {$ticket['id']} ยังไม่มี Invoice Number", 400);
                 }
             }
 
@@ -256,7 +256,7 @@ class ReferenceHandler extends BaseHandler
                 'rc_generated_at' => $rcGeneratedAt
             ];
 
-            // ✅ ตรวจสอบว่าเป็น Regular Receipt หรือ Multi PO Receipt
+            // ✅ ตรวจสอบว่าเป็น Regular Receipt หรือ Multi INV Receipt
             if ($selectionData && !$linkedTicketIds) {
                 // Regular Receipt - บันทึก selection data
                 $this->logMessage("Regular Receipt: Saving selection data");
@@ -269,8 +269,8 @@ class ReferenceHandler extends BaseHandler
                 );
 
             } elseif ($linkedTicketIds && count($ticketIds) > 1) {
-                // Multi PO Receipt - บันทึก linked tickets
-                $this->logMessage("Multi PO Receipt: Saving linked tickets");
+                // Multi INV Receipt - บันทึก linked tickets
+                $this->logMessage("Multi INV Receipt: Saving linked tickets");
                 $linkedData = json_encode([
                     'ticket_ids' => $ticketIds,
                     'primary_ticket_id' => $ticketId
@@ -339,7 +339,8 @@ class ReferenceHandler extends BaseHandler
     }
 
     /**
-     * สร้าง INV Number สำหรับ ticket พร้อม FT (ใหม่)
+     * สร้าง INV Number สำหรับ ticket พร้อม FT
+     * รูปแบบ: INV260001 (INV + ปี 2 หลัก + running number 4 หลัก)
      */
     private function generateINVForTicket()
     {
@@ -373,20 +374,33 @@ class ReferenceHandler extends BaseHandler
                 ]);
             }
 
-            // สร้าง INV Number ใหม่
-            $invResult = $this->db->generateReferenceNumber('bookings_ticket', 'INV', 'invoice_number');
-            if (!$invResult['success']) {
-                return $this->errorResponse('ไม่สามารถสร้าง Invoice Number ได้');
+            // สร้าง INV Number ใหม่ รูปแบบ INV260001
+            $year = date('y'); // 2 หลักท้ายของปี เช่น 26
+            $pattern = 'INV' . $year . '%';
+
+            $lastResult = $this->db->raw(
+                "SELECT invoice_number FROM bookings_ticket WHERE invoice_number LIKE :pattern ORDER BY invoice_number DESC LIMIT 1",
+                ['pattern' => $pattern]
+            );
+
+            $sequence = 1;
+            if ($lastResult['success'] && !empty($lastResult['data'])) {
+                $lastInv = $lastResult['data'][0]['invoice_number'];
+                // Extract sequence from INV260001 → 0001 → 1
+                $lastSequence = (int)substr($lastInv, 5); // ตัด "INV26" ออก เหลือ "0001"
+                $sequence = $lastSequence + 1;
             }
 
-            $invNumber = $invResult['reference_number'];
+            $formattedSequence = str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            $invNumber = "INV{$year}{$formattedSequence}";
 
-            // อัปเดต ticket ด้วย INV Number
+            // อัปเดต ticket ด้วย INV Number และเปลี่ยนสถานะเป็น invoiced
             $updateResult = $this->db->update(
                 'bookings_ticket',
                 [
                     'invoice_number' => $invNumber,
-                    'invoice_generated_at' => date('Y-m-d H:i:s')
+                    'invoice_generated_at' => date('Y-m-d H:i:s'),
+                    'status' => 'invoiced'
                 ],
                 'id = :id',
                 ['id' => $ticketId]

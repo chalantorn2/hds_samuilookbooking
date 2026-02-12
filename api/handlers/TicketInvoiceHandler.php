@@ -111,6 +111,7 @@ class TicketInvoiceHandler extends BaseHandler
                 tai.code as additional_code, tai.ticket_type, tai.ticket_type_details,
                 tai.company_payment_method, tai.company_payment_details,
                 tai.customer_payment_method, tai.customer_payment_details,
+                tai.remark,
                 
                 -- User data
                 u.fullname as user_fullname
@@ -126,8 +127,13 @@ class TicketInvoiceHandler extends BaseHandler
 
             $result = $this->db->raw($sql, ['ticketId' => $ticketId]);
 
-            if (!$result['success'] || empty($result['data'])) {
-                return $this->errorResponse('Ticket not found', 404);
+            if (!$result['success']) {
+                $this->logMessage("SQL Error in getInvoiceDataForTicket: " . ($result['error'] ?? 'Unknown'), 'ERROR');
+                return $this->errorResponse('Database error: ' . ($result['error'] ?? 'Unknown error'), 500);
+            }
+
+            if (empty($result['data'])) {
+                return $this->errorResponse('Ticket not found: ID ' . $ticketId, 404);
             }
 
             $mainData = $result['data'][0];
@@ -138,7 +144,7 @@ class TicketInvoiceHandler extends BaseHandler
             $routesData = $this->getInvoiceRoutesData($ticketId);
             $extrasData = $this->getInvoiceExtrasData($ticketId);
 
-            // ⭐ ประมวลผล rc_linked_tickets สำหรับ MultiPOReceipt
+            // ⭐ ประมวลผล rc_linked_tickets สำหรับ MultiINVReceipt
             $selectedPOs = null;
             $multiPOSummary = null;
 
@@ -147,9 +153,9 @@ class TicketInvoiceHandler extends BaseHandler
 
             $this->logMessage("DEBUG: documentType = {$documentType}, hasLinkedTickets = " . ($hasLinkedTickets ? 'YES' : 'NO') . ", hasSelectionData = " . ($hasSelectionData ? 'YES' : 'NO'));
 
-            // ✅ เช็คว่าไม่มี rc_selection_data (ถ้ามี = Regular Receipt ไม่ใช่ Multi PO)
+            // ✅ เช็คว่าไม่มี rc_selection_data (ถ้ามี = Regular Receipt ไม่ใช่ Multi INV)
             if ($hasLinkedTickets && $documentType === 'receipt' && !$hasSelectionData) {
-                $this->logMessage("DEBUG: Processing Multi PO Receipt");
+                $this->logMessage("DEBUG: Processing Multi INV Receipt");
                 $linkedData = json_decode($mainData['rc_linked_tickets'], true);
                 $this->logMessage("DEBUG: linkedData = " . json_encode($linkedData));
 
@@ -236,7 +242,7 @@ class TicketInvoiceHandler extends BaseHandler
                     'grand_total' => $mainData['grand_total']
                 ]],
 
-                // Additional info array (unchanged)
+                // Additional info array
                 'ticket_additional_info' => [[
                     'code' => $mainData['additional_code'],
                     'ticket_type' => $mainData['ticket_type'],
@@ -244,7 +250,8 @@ class TicketInvoiceHandler extends BaseHandler
                     'company_payment_method' => $mainData['company_payment_method'],
                     'company_payment_details' => $mainData['company_payment_details'],
                     'customer_payment_method' => $mainData['customer_payment_method'],
-                    'customer_payment_details' => $mainData['customer_payment_details']
+                    'customer_payment_details' => $mainData['customer_payment_details'],
+                    'remark' => $mainData['remark'] ?? null
                 ]],
 
                 // User object (unchanged)
@@ -258,7 +265,7 @@ class TicketInvoiceHandler extends BaseHandler
                 'tickets_routes' => $routesData,
                 'tickets_extras' => $extrasData,
 
-                // ⭐ Multi PO Receipt data
+                // ⭐ Multi INV Receipt data
                 'selectedPOs' => $selectedPOs,
                 'multiPOSummary' => $multiPOSummary
             ];
@@ -288,22 +295,10 @@ class TicketInvoiceHandler extends BaseHandler
             $processedData = [];
 
             // ========================================
-            // 1. ดึงข้อมูล Flight Tickets (PO)
+            // ดึงข้อมูล Flight Tickets (PO/INV) เท่านั้น
             // ========================================
             $flightData = $this->getFlightInvoiceData($startDate, $endDate, $searchTerm, $filterStatus);
             $processedData = array_merge($processedData, $flightData);
-
-            // ========================================
-            // 2. ดึงข้อมูล Vouchers (VC) ที่มี VC Number
-            // ========================================
-            $voucherData = $this->getVoucherInvoiceData($startDate, $endDate, $searchTerm, $filterStatus);
-            $processedData = array_merge($processedData, $voucherData);
-
-            // ========================================
-            // 3. ดึงข้อมูล Other Services (HTL, TRN, VSA, OTH) ที่มี PO Number
-            // ========================================
-            $otherData = $this->getOtherServicesInvoiceData($startDate, $endDate, $searchTerm, $filterStatus);
-            $processedData = array_merge($processedData, $otherData);
 
             // ========================================
             // Sort all data
@@ -341,7 +336,7 @@ class TicketInvoiceHandler extends BaseHandler
                 return strcmp($aVal, $bVal) * $sortDir;
             });
 
-            $this->logMessage("Fetched " . count($processedData) . " invoice items (PO + VC + Other)");
+            $this->logMessage("Fetched " . count($processedData) . " invoice items (PO/INV only)");
             return $this->successResponse($processedData, null, count($processedData));
         } catch (Exception $e) {
             $this->logMessage("Error getting invoice tickets: " . $e->getMessage(), 'ERROR');
@@ -357,13 +352,12 @@ class TicketInvoiceHandler extends BaseHandler
         $whereConditions = [];
         $params = [];
 
-        // PO number condition
-        $whereConditions[] = "bt.po_number IS NOT NULL";
-        $whereConditions[] = "bt.po_number != ''";
+        // INV or PO number condition - ✅ รองรับทั้ง invoice_number (ใหม่) และ po_number (เก่า)
+        $whereConditions[] = "((bt.invoice_number IS NOT NULL AND bt.invoice_number != '') OR (bt.po_number IS NOT NULL AND bt.po_number != ''))";
 
-        // Date range filter - ✅ กรองตาม po_generated_at (วันที่สร้างเอกสาร PO)
+        // Date range filter - ✅ กรองตาม invoice_generated_at หรือ po_generated_at
         if (!empty($startDate) && !empty($endDate)) {
-            $whereConditions[] = "DATE(bt.po_generated_at) BETWEEN :startDate AND :endDate";
+            $whereConditions[] = "DATE(COALESCE(bt.invoice_generated_at, bt.po_generated_at)) BETWEEN :startDate AND :endDate";
             $params['startDate'] = $startDate;
             $params['endDate'] = $endDate;
         }
@@ -374,6 +368,7 @@ class TicketInvoiceHandler extends BaseHandler
             $whereConditions[] = "(
                 COALESCE(bt.reference_number, '') LIKE :search1 OR
                 COALESCE(bt.po_number, '') LIKE :search2 OR
+                COALESCE(bt.invoice_number, '') LIKE :search7 OR
                 COALESCE(c.name, '') LIKE :search3 OR
                 COALESCE(c.code, '') LIKE :search4 OR
                 COALESCE(i.name, '') LIKE :search5 OR
@@ -386,6 +381,7 @@ class TicketInvoiceHandler extends BaseHandler
             $params['search4'] = $searchPattern;
             $params['search5'] = $searchPattern;
             $params['search6'] = $searchPattern;
+            $params['search7'] = $searchPattern;
         }
 
         // Status filter
@@ -401,6 +397,7 @@ class TicketInvoiceHandler extends BaseHandler
             SELECT
                 bt.id, bt.reference_number, bt.status, bt.payment_status,
                 bt.created_at, bt.updated_at, bt.po_number, bt.po_generated_at,
+                bt.invoice_number, bt.invoice_generated_at,
                 bt.rc_number, bt.rc_generated_at, bt.rc_selection_data,
                 bt.rc_email_sent, bt.rc_email_sent_at,
                 bt.cancelled_at, bt.cancelled_by, bt.cancel_reason,
@@ -414,7 +411,7 @@ class TicketInvoiceHandler extends BaseHandler
             LEFT JOIN tickets_detail td ON bt.id = td.bookings_ticket_id
             LEFT JOIN users cu ON bt.cancelled_by = cu.id
             WHERE {$whereClause}
-            ORDER BY bt.po_generated_at DESC
+            ORDER BY COALESCE(bt.invoice_generated_at, bt.po_generated_at) DESC
         ";
 
         $result = $this->db->raw($sql, $params);
@@ -472,16 +469,22 @@ class TicketInvoiceHandler extends BaseHandler
             $createdAt = new DateTime($ticket['created_at']);
             $createdAt->add(new DateInterval('PT7H'));
 
+            // ✅ ใช้ invoice_number เป็นหลัก fallback เป็น po_number (ข้อมูลเก่า)
+            $docNumber = !empty($ticket['invoice_number']) ? $ticket['invoice_number'] : $ticket['po_number'];
+            $docGeneratedAt = !empty($ticket['invoice_generated_at']) ? $ticket['invoice_generated_at'] : $ticket['po_generated_at'];
+
             $processedData[] = [
                 'id' => $ticket['id'],
-                'service_type' => 'PO', // ⭐ Flight Ticket
+                'service_type' => 'INV', // ⭐ เปลี่ยนจาก PO เป็น INV
                 'reference_number' => $ticket['reference_number'],
                 'status' => $ticket['status'],
                 'payment_status' => $ticket['payment_status'],
                 'created_at' => $createdAt->format('c'),
                 'updated_at' => $ticket['updated_at'],
-                'po_number' => $ticket['po_number'],
-                'po_generated_at' => $ticket['po_generated_at'],
+                'po_number' => $docNumber,
+                'po_generated_at' => $docGeneratedAt,
+                'invoice_number' => $ticket['invoice_number'],
+                'invoice_generated_at' => $ticket['invoice_generated_at'],
                 'rc_number' => $ticket['rc_number'],
                 'rc_generated_at' => $ticket['rc_generated_at'],
                 'rc_selection_data' => $ticket['rc_selection_data'],
@@ -978,10 +981,11 @@ class TicketInvoiceHandler extends BaseHandler
             if (!empty($searchTerm) && trim($searchTerm) !== '') {
                 $cleanSearchTerm = trim($searchTerm);
                 $whereConditions[] = "(
-        COALESCE(bt.reference_number, '') LIKE :search1 OR 
+        COALESCE(bt.reference_number, '') LIKE :search1 OR
         COALESCE(bt.rc_number, '') LIKE :search2 OR
         COALESCE(bt.po_number, '') LIKE :search3 OR
-        COALESCE(c.name, '') LIKE :search4 OR 
+        COALESCE(bt.invoice_number, '') LIKE :search8 OR
+        COALESCE(c.name, '') LIKE :search4 OR
         COALESCE(c.code, '') LIKE :search5 OR
         COALESCE(i.name, '') LIKE :search6 OR
         COALESCE(i.code, '') LIKE :search7
@@ -995,6 +999,7 @@ class TicketInvoiceHandler extends BaseHandler
                 $params['search5'] = $searchPattern;
                 $params['search6'] = $searchPattern;
                 $params['search7'] = $searchPattern;
+                $params['search8'] = $searchPattern;
             }
 
             // Email Status filter (sent/unsent) for Receipt List
@@ -1019,11 +1024,12 @@ class TicketInvoiceHandler extends BaseHandler
             $sortDirection = strtoupper($sortDirection) === 'ASC' ? 'ASC' : 'DESC';
 
 
-            // Main query
+            // Main query - ✅ เพิ่ม invoice_number, invoice_generated_at
             $sql = "
             SELECT
                 bt.id, bt.reference_number, bt.status, bt.payment_status,
                 bt.created_at, bt.updated_at, bt.po_number, bt.po_generated_at,
+                bt.invoice_number, bt.invoice_generated_at,
                 bt.rc_number, bt.rc_generated_at, bt.rc_selection_data, bt.rc_linked_tickets,
                 bt.rc_email_sent, bt.rc_email_sent_at,
                 bt.cancelled_at, bt.cancelled_by, bt.cancel_reason,
@@ -1072,7 +1078,7 @@ class TicketInvoiceHandler extends BaseHandler
             foreach ($tickets as $ticket) {
                 $ticketId = $ticket['id'];
 
-                // ⭐ กรองออก ticket ที่ไม่ใช่ primary ticket สำหรับ Multi PO Receipt
+                // ⭐ กรองออก ticket ที่ไม่ใช่ primary ticket สำหรับ Multi INV Receipt
                 if (!empty($ticket['rc_linked_tickets'])) {
                     $linkedData = json_decode($ticket['rc_linked_tickets'], true);
                     // ⭐ รองรับทั้ง lowercase และ UPPERCASE keys
@@ -1167,6 +1173,10 @@ class TicketInvoiceHandler extends BaseHandler
                     }
                 }
 
+                // ✅ ใช้ invoice_number เป็นหลัก fallback เป็น po_number
+                $docNumber = !empty($ticket['invoice_number']) ? $ticket['invoice_number'] : $ticket['po_number'];
+                $docGeneratedAt = !empty($ticket['invoice_generated_at']) ? $ticket['invoice_generated_at'] : $ticket['po_generated_at'];
+
                 $processedData[] = [
                     'id' => $ticket['id'],
                     'reference_number' => $ticket['reference_number'],
@@ -1174,12 +1184,14 @@ class TicketInvoiceHandler extends BaseHandler
                     'payment_status' => $ticket['payment_status'],
                     'created_at' => $createdAt,
                     'updated_at' => $ticket['updated_at'],
-                    'po_number' => $ticket['po_number'],
-                    'po_generated_at' => $ticket['po_generated_at'],
+                    'po_number' => $docNumber,
+                    'po_generated_at' => $docGeneratedAt,
+                    'invoice_number' => $ticket['invoice_number'],
+                    'invoice_generated_at' => $ticket['invoice_generated_at'],
                     'rc_number' => $ticket['rc_number'],
                     'rc_generated_at' => $rcGeneratedAt,
                     'rc_selection_data' => $selectionData, // ⭐ ส่ง selection data กลับไป
-                    'rc_linked_tickets' => $ticket['rc_linked_tickets'], // ⭐ เพิ่มฟิลด์นี้เพื่อบอกว่าเป็น MultiPOReceipt
+                    'rc_linked_tickets' => $ticket['rc_linked_tickets'], // ⭐ เพิ่มฟิลด์นี้เพื่อบอกว่าเป็น MultiINVReceipt
                     'rc_email_sent' => $ticket['rc_email_sent'] ?? 0, // ✅ เพิ่มฟิลด์นี้
                     'rc_email_sent_at' => $ticket['rc_email_sent_at'], // ✅ เพิ่มฟิลด์นี้
                     'cancelled_at' => $ticket['cancelled_at'],
@@ -1326,7 +1338,7 @@ class TicketInvoiceHandler extends BaseHandler
         $selectionData = $this->request['selectionData'] ?? null;
         $allowOverwrite = $this->request['allowOverwrite'] ?? false;
         $userId = $this->request['userId'] ?? null; // ✅ เพิ่มรับ userId
-        $linkedTicketIds = $this->request['linkedTicketIds'] ?? null; // ⭐ รับ linkedTicketIds สำหรับ Multi PO Receipt
+        $linkedTicketIds = $this->request['linkedTicketIds'] ?? null; // ⭐ รับ linkedTicketIds สำหรับ Multi INV Receipt
 
         // ✅ DEBUG: Log incoming data
         $this->logMessage("generateRCForTicket called with ticketId={$ticketId}, hasSelectionData=" . ($selectionData ? 'YES' : 'NO') . ", hasLinkedTicketIds=" . ($linkedTicketIds ? 'YES' : 'NO'));
@@ -1409,7 +1421,7 @@ class TicketInvoiceHandler extends BaseHandler
                 $this->logMessage("DEBUG: selectionData is empty/null - NOT setting rc_selection_data");
             }
 
-            // ⭐ ถ้ามี linkedTicketIds = Multi PO Receipt
+            // ⭐ ถ้ามี linkedTicketIds = Multi INV Receipt
             if ($linkedTicketIds && is_array($linkedTicketIds) && count($linkedTicketIds) > 1) {
                 // สร้าง rc_linked_tickets JSON (ใช้ lowercase keys)
                 $linkedData = [
@@ -1419,7 +1431,7 @@ class TicketInvoiceHandler extends BaseHandler
                 ];
                 $updateData['rc_linked_tickets'] = json_encode($linkedData, JSON_UNESCAPED_UNICODE);
 
-                $this->logMessage("Multi PO Receipt: RC {$rcNumber} for " . count($linkedTicketIds) . " tickets");
+                $this->logMessage("Multi INV Receipt: RC {$rcNumber} for " . count($linkedTicketIds) . " tickets");
 
                 // ✅ บังคับลบ rc_selection_data สำหรับทุก ticket ที่เกี่ยวข้อง
                 foreach ($linkedTicketIds as $linkedId) {
@@ -1541,9 +1553,9 @@ class TicketInvoiceHandler extends BaseHandler
         try {
             $sql = "
             SELECT 
-                adult_sale_price, adult_pax, adult_total,
-                child_sale_price, child_pax, child_total,
-                infant_sale_price, infant_pax, infant_total
+                adt1_sale_price, adt1_pax, adt1_total,
+                adt2_sale_price, adt2_pax, adt2_total,
+                adt3_sale_price, adt3_pax, adt3_total
             FROM tickets_pricing 
             WHERE bookings_ticket_id = :ticketId
             ORDER BY id
@@ -1967,9 +1979,12 @@ class TicketInvoiceHandler extends BaseHandler
     {
         try {
             // ใช้โค้ดจาก getInvoiceTickets แต่กรองเฉพาะที่ยังไม่มี RC
+            // ✅ รองรับทั้ง invoice_number (ใหม่) และ po_number (เก่า)
             $result = $this->db->raw("
                 SELECT
                     bt.id, bt.reference_number, bt.po_number, bt.po_generated_at,
+                    bt.invoice_number, bt.invoice_generated_at,
+                    COALESCE(bt.invoice_number, bt.po_number) as doc_number,
                     bt.customer_id,
                     c.id as customer_id, c.name as customer_name, c.code as customer_code,
                     i.id as supplier_id, i.name as supplier_name, i.code as supplier_code,
@@ -1978,10 +1993,10 @@ class TicketInvoiceHandler extends BaseHandler
                 LEFT JOIN customers c ON bt.customer_id = c.id
                 LEFT JOIN information i ON bt.information_id = i.id
                 LEFT JOIN tickets_detail td ON bt.id = td.bookings_ticket_id
-                WHERE bt.po_number IS NOT NULL
+                WHERE ((bt.invoice_number IS NOT NULL AND bt.invoice_number != '') OR (bt.po_number IS NOT NULL AND bt.po_number != ''))
                   AND (bt.rc_number IS NULL OR bt.rc_number = '')
                   AND bt.status != 'cancelled'
-                ORDER BY bt.po_generated_at DESC
+                ORDER BY COALESCE(bt.invoice_generated_at, bt.po_generated_at) DESC
             ");
 
             if (!$result['success']) {
@@ -1994,6 +2009,9 @@ class TicketInvoiceHandler extends BaseHandler
 
             // ดึงข้อมูล passengers และ routes สำหรับแต่ละ ticket
             foreach ($tickets as &$ticket) {
+                // ✅ ใช้ doc_number (COALESCE ของ invoice_number, po_number) เป็น po_number สำหรับ frontend
+                $ticket['po_number'] = $ticket['doc_number'] ?? $ticket['po_number'];
+                $ticket['po_generated_at'] = !empty($ticket['invoice_generated_at']) ? $ticket['invoice_generated_at'] : $ticket['po_generated_at'];
                 // Debug log สำหรับ total_amount
                 $this->logMessage("Ticket {$ticket['id']}: total_amount = " . ($ticket['total_amount'] ?? 'NULL'));
                 // Passengers
@@ -2081,7 +2099,7 @@ class TicketInvoiceHandler extends BaseHandler
 
     /**
      * Get Combined Invoice Data from Multiple Tickets
-     * รวมข้อมูลจากหลาย POs เพื่อแสดงใน ReceiptSelectionModal
+     * รวมข้อมูลจากหลาย INVs เพื่อแสดงใน ReceiptSelectionModal
      */
     private function getCombinedInvoiceData()
     {
@@ -2217,7 +2235,7 @@ class TicketInvoiceHandler extends BaseHandler
     }
 
     /**
-     * ⭐ ดึงข้อมูล PO ของ tickets ที่ linked กันสำหรับแสดงใน MultiPOReceiptTable
+     * ⭐ ดึงข้อมูล INV ของ tickets ที่ linked กันสำหรับแสดงใน MultiINVReceiptTable
      * @param array $ticketIds - Array of ticket IDs
      * @return array - Array of PO data
      */

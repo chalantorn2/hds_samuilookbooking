@@ -1,21 +1,19 @@
-// InvoiceList.jsx - รองรับหลาย Service Types: PO, VC, HTL, TRN, VSA, OTH
+// InvoiceList.jsx - แสดงเฉพาะ INV (PO/Flight Tickets)
 import React, { useState, useEffect } from "react";
 import {
   Search,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Eye,
   ChevronsUpDown,
   AlertCircle,
   Receipt,
-  User,
-  Plane,
-  Users,
-  MapPin,
-  Ticket,
   Edit2,
   Download,
+  Mail,
+  FileText,
+  Printer,
+  Check,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -31,9 +29,9 @@ import { useInvoiceListData } from "./hooks/useInvoiceListData";
 import ReceiptSelectionModal from "../../components/documents/modals/ReceiptSelectionModal";
 import MultiPOReceiptGenerationModal from "../../components/documents/modals/MultiPOReceiptGenerationModal";
 import DocumentViewer from "../../components/documents/viewers/DocumentViewer";
-// ⭐ Import สำหรับ Other Services
-import OtherServicesDetail from "../View/OtherServices/OtherServicesDetail";
-import OtherServicesDetail_Edit from "../View/OtherServices/OtherServicesDetail_Edit";
+// ⭐ Import สำหรับ PO Actions (Edit, Email)
+import FlightTicketDetail_Edit from "../View/FlightTickets/FlightTicketDetail_Edit";
+import EmailDocument from "../../components/documents/email/EmailDocument";
 
 const InvoiceList = () => {
   // ✅ ใช้ getCurrentMonthRange เหมือน FlightTicketsView
@@ -61,19 +59,20 @@ const InvoiceList = () => {
   const [filterStatus, setFilterStatus] = useState("all_except_cancelled");
   const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // ⭐ Multi-PO RC Generation Modal
+  // ⭐ Multi-INV RC Generation Modal
   const [multiPOModalOpen, setMultiPOModalOpen] = useState(false);
 
-  // ⭐ Document Viewer state for Multi-PO RC Preview
+  // ⭐ Document Viewer state for Multi-INV RC Preview
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   const [viewerTicketId, setViewerTicketId] = useState(null);
 
-  // ⭐ State สำหรับ Other Services Detail Modal
-  const [selectedOther, setSelectedOther] = useState(null);
-  const [selectedOtherEdit, setSelectedOtherEdit] = useState(null);
-
-  // ⭐ State สำหรับ Voucher Document Viewer
-  const [selectedVoucher, setSelectedVoucher] = useState(null);
+  // ⭐ State สำหรับ PO Action Buttons
+  const [selectedTicketForEdit, setSelectedTicketForEdit] = useState(null);
+  const [selectedTicketForInvoice, setSelectedTicketForInvoice] =
+    useState(null);
+  const [selectedTicketForReceipt, setSelectedTicketForReceipt] =
+    useState(null);
+  const [selectedTicketForEmail, setSelectedTicketForEmail] = useState(null);
 
   // ⭐ ใช้ custom hook แทน
   const { loading, error, filteredInvoices, fetchInvoices } =
@@ -134,18 +133,9 @@ const InvoiceList = () => {
       SUP: ticket.supplier?.code || ticket.supplier?.name || "-",
       "Pax's Name": ticket.passengersDisplay || "-",
       Pax: ticket.pax_count || 0,
-      "Routing/Desc":
-        ticket.service_type === "PO"
-          ? ticket.routingDisplay || "-"
-          : ticket.routingDisplay || ticket.description || "-",
-      "Ticket Number":
-        ticket.service_type === "PO" ? ticket.ticketNumberDisplay || "-" : "-",
-      Code:
-        ticket.service_type === "PO"
-          ? ticket.code || "-"
-          : ticket.service_type === "TRN"
-            ? ticket.reference_code || ticket.code || "-"
-            : "-",
+      "Routing/Desc": ticket.routingDisplay || "-",
+      "Ticket Number": ticket.ticketNumberDisplay || "-",
+      Code: ticket.code || "-",
       Amount: parseFloat(ticket.total_amount) || 0,
       "Created At": displayThaiDateTime(
         ticket.po_generated_at || ticket.created_at,
@@ -212,7 +202,7 @@ const InvoiceList = () => {
                 onClick={() => setMultiPOModalOpen(true)}
               >
                 <Receipt size={16} className="mr-2" />
-                Multi-PO RC
+                ออก Receipt รวม
               </button>
 
               {/* ⭐ Export Excel Button */}
@@ -387,10 +377,10 @@ const InvoiceList = () => {
                 ) : (
                   currentTickets.map((ticket) => (
                     <tr
-                      key={`${ticket.service_type || "PO"}-${ticket.id}`}
+                      key={ticket.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      {/* Doc Number (PO/VC/HTL/TRN/VSA/OTH) */}
+                      {/* Doc Number */}
                       <td className="pl-6 py-4 whitespace-nowrap text-sm font-normal text-blue-600">
                         {ticket.po_number || "-"}
                       </td>
@@ -443,49 +433,26 @@ const InvoiceList = () => {
                         </div>
                       </td>
 
-                      {/* Routing/Description - แสดงตาม service_type */}
+                      {/* Routing */}
                       <td className="px-2 py-4 whitespace-nowrap">
                         <div
                           className="text-sm font-normal text-gray-900"
-                          title={
-                            ticket.routingDisplay || ticket.description || "-"
-                          }
+                          title={ticket.routingDisplay || "-"}
                         >
-                          {/* PO: routing, Others: description (truncate 30 chars) */}
-                          {ticket.service_type === "PO"
-                            ? ticket.routingDisplay || "-"
-                            : (
-                                  ticket.routingDisplay ||
-                                  ticket.description ||
-                                  "-"
-                                ).length > 30
-                              ? (
-                                  ticket.routingDisplay ||
-                                  ticket.description ||
-                                  "-"
-                                ).substring(0, 30) + "..."
-                              : ticket.routingDisplay ||
-                                ticket.description ||
-                                "-"}
+                          {ticket.routingDisplay || "-"}
                         </div>
                       </td>
 
-                      {/* Ticket Number - เฉพาะ PO */}
+                      {/* Ticket Number */}
                       <td className="px-2 py-4 whitespace-nowrap">
                         <div className="text-sm font-normal text-gray-900">
-                          {ticket.service_type === "PO"
-                            ? ticket.ticketNumberDisplay || "-"
-                            : "-"}
+                          {ticket.ticketNumberDisplay || "-"}
                         </div>
                       </td>
 
-                      {/* Code - PO: code, TRN: reference_code */}
+                      {/* Code */}
                       <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {ticket.service_type === "PO"
-                          ? ticket.code || "-"
-                          : ticket.service_type === "TRN"
-                            ? ticket.reference_code || ticket.code || "-"
-                            : "-"}
+                        {ticket.code || "-"}
                       </td>
 
                       {/* Amount */}
@@ -496,69 +463,71 @@ const InvoiceList = () => {
                         {formatCurrency(ticket.total_amount)}
                       </td>
 
-                      {/* Actions - แยกตาม service_type */}
+                      {/* Actions */}
                       <td className="px-2 py-4 whitespace-nowrap text-center text-sm font-normal">
                         <div className="flex items-center justify-center space-x-2">
-                          {/* ⭐ PO: FlightTicketDetail + Receipt */}
-                          {ticket.service_type === "PO" && (
-                            <>
-                              <button
-                                className="text-blue-600 hover:text-blue-900"
-                                onClick={() => openTicketDetail(ticket.id)}
-                                title="View Details"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              <Receipt
-                                size={18}
-                                className={
-                                  ticket.rc_number &&
-                                  ticket.rc_number.trim() !== ""
-                                    ? "text-green-500"
-                                    : "text-gray-400"
-                                }
-                                title={
-                                  ticket.rc_number &&
-                                  ticket.rc_number.trim() !== ""
-                                    ? `Receipt: ${ticket.rc_number}`
-                                    : "No Receipt"
-                                }
-                              />
-                            </>
-                          )}
-
-                          {/* ⭐ VC: DocumentViewer (voucher) */}
-                          {ticket.service_type === "VC" && (
-                            <button
-                              className="text-blue-600 hover:text-blue-900"
-                              onClick={() => setSelectedVoucher(ticket)}
-                              title="View Voucher"
-                            >
-                              <Eye size={18} />
-                            </button>
-                          )}
-
-                          {/* ⭐ HTL, TRN, VSA, OTH: OtherServicesDetail + Edit */}
-                          {["HTL", "TRN", "VSA", "OTH"].includes(
-                            ticket.service_type,
-                          ) && (
-                            <>
-                              <button
-                                className="text-blue-600 hover:text-blue-900"
-                                onClick={() => setSelectedOther(ticket)}
-                                title="View Details"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              <button
-                                className="text-yellow-600 hover:text-yellow-900"
-                                onClick={() => setSelectedOtherEdit(ticket)}
-                                title="Edit"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                            </>
-                          )}
+                          {/* 1. ปุ่มแก้ไข */}
+                          <button
+                            className="text-yellow-600 hover:text-yellow-900"
+                            onClick={() => setSelectedTicketForEdit(ticket.id)}
+                            title="แก้ไข"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          {/* 2. ปุ่ม Print Invoice */}
+                          <button
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() =>
+                              setSelectedTicketForInvoice(ticket.id)
+                            }
+                            title="Print Invoice"
+                          >
+                            <Printer size={18} />
+                          </button>
+                          {/* 3. ปุ่มออก Receipt */}
+                          <button
+                            className={
+                              ticket.rc_number && ticket.rc_number.trim() !== ""
+                                ? "text-green-600 hover:text-green-900"
+                                : "text-gray-500 hover:text-gray-700"
+                            }
+                            onClick={() =>
+                              setSelectedTicketForReceipt(ticket.id)
+                            }
+                            title={
+                              ticket.rc_number && ticket.rc_number.trim() !== ""
+                                ? `Receipt: ${ticket.rc_number}`
+                                : "ออก Receipt"
+                            }
+                          >
+                            <Receipt size={18} />
+                          </button>
+                          {/* 4. ปุ่มส่งอีเมล์ */}
+                          <button
+                            className={
+                              ticket.po_email_sent === 1 ||
+                              ticket.po_email_sent === "1" ||
+                              ticket.po_email_sent === true
+                                ? "text-green-600 hover:text-green-800"
+                                : "text-gray-400 hover:text-gray-600"
+                            }
+                            onClick={() => setSelectedTicketForEmail(ticket.id)}
+                            title={
+                              ticket.po_email_sent === 1 ||
+                              ticket.po_email_sent === "1" ||
+                              ticket.po_email_sent === true
+                                ? "ส่งอีเมลแล้ว - คลิกเพื่อส่งใหม่"
+                                : "ส่งอีเมล"
+                            }
+                          >
+                            {ticket.po_email_sent === 1 ||
+                            ticket.po_email_sent === "1" ||
+                            ticket.po_email_sent === true ? (
+                              <Check size={18} />
+                            ) : (
+                              <Mail size={18} />
+                            )}
+                          </button>
                         </div>
                       </td>
 
@@ -706,7 +675,7 @@ const InvoiceList = () => {
         />
       )}
 
-      {/* ⭐ Document Viewer for Multi-PO RC Preview */}
+      {/* ⭐ Document Viewer for Multi-INV RC Preview */}
       {showDocumentViewer && viewerTicketId && (
         <DocumentViewer
           isOpen={showDocumentViewer}
@@ -720,35 +689,51 @@ const InvoiceList = () => {
         />
       )}
 
-      {/* ⭐ Other Services Detail Modal */}
-      {selectedOther && (
-        <OtherServicesDetail
-          otherId={selectedOther.id}
-          onClose={() => setSelectedOther(null)}
-          onVCGenerated={fetchInvoices}
-        />
-      )}
-
-      {/* ⭐ Other Services Edit Modal */}
-      {selectedOtherEdit && (
-        <OtherServicesDetail_Edit
-          otherId={selectedOtherEdit.id}
-          onClose={() => setSelectedOtherEdit(null)}
+      {/* ⭐ PO: Edit Modal */}
+      {selectedTicketForEdit && (
+        <FlightTicketDetail_Edit
+          ticketId={selectedTicketForEdit}
+          onClose={() => setSelectedTicketForEdit(null)}
           onSave={() => {
-            setSelectedOtherEdit(null);
+            setSelectedTicketForEdit(null);
             fetchInvoices();
           }}
         />
       )}
 
-      {/* ⭐ Voucher Document Viewer */}
-      {selectedVoucher && (
+      {/* ⭐ PO: Print Invoice (DocumentViewer) */}
+      {selectedTicketForInvoice && (
         <DocumentViewer
-          isOpen={!!selectedVoucher}
-          onClose={() => setSelectedVoucher(null)}
-          documentType="voucher"
-          ticketId={selectedVoucher.id}
-          bookingType="voucher"
+          isOpen={!!selectedTicketForInvoice}
+          onClose={() => setSelectedTicketForInvoice(null)}
+          documentType="inv"
+          ticketId={selectedTicketForInvoice}
+          onDocumentGenerated={fetchInvoices}
+        />
+      )}
+
+      {/* ⭐ PO: Issue Receipt (DocumentViewer) */}
+      {selectedTicketForReceipt && (
+        <DocumentViewer
+          isOpen={!!selectedTicketForReceipt}
+          onClose={() => setSelectedTicketForReceipt(null)}
+          documentType="receipt"
+          ticketId={selectedTicketForReceipt}
+          onDocumentGenerated={fetchInvoices}
+        />
+      )}
+
+      {/* ⭐ PO: Send Email */}
+      {selectedTicketForEmail && (
+        <EmailDocument
+          isOpen={!!selectedTicketForEmail}
+          onClose={() => setSelectedTicketForEmail(null)}
+          documentType="invoice"
+          recordId={selectedTicketForEmail}
+          onEmailSent={() => {
+            setSelectedTicketForEmail(null);
+            fetchInvoices();
+          }}
         />
       )}
     </div>

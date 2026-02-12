@@ -438,7 +438,7 @@ const DocumentViewer = ({
       case "inv": // ✅ INV ใช้ InvoiceTable เหมือนกับ invoice
         return <InvoiceTable {...commonProps} />;
       case "receipt":
-        // ⭐ เช็คว่าเป็น Multi PO Receipt หรือไม่
+        // ⭐ เช็คว่าเป็น Multi INV Receipt หรือไม่
         if (documentData.selectedPOs && documentData.selectedPOs.length > 0) {
           return <MultiPOReceiptTable {...commonProps} />;
         }
@@ -735,15 +735,9 @@ const DocumentViewer = ({
 
       .print-passenger-grid {
         display: grid !important;
-        grid-template-columns: 10px minmax(240px, max-content) 40px 30px 80px !important;
+        grid-template-columns: 10px 1fr !important;
         gap: 8px !important;
         align-items: center !important;
-      }
-
-      /* เอาการจัดการ text overflow ออก */
-      .passenger-name {
-        text-align: left !important;
-        white-space: nowrap; /* ไม่ให้ขึ้นบรรทัดใหม่ */
       }
 
       .passenger-index {
@@ -752,19 +746,7 @@ const DocumentViewer = ({
 
       .passenger-name {
         text-align: left !important;
-      }
-
-      .passenger-age {
-        text-align: center !important;
-      }
-
-      .passenger-ticket {
-        text-align: center !important;
-      }
-
-      .passenger-code {
-        text-align: left !important;
-        white-space: nowrap !important;
+        white-space: nowrap;
       }
 
       /* ใหม่: สำหรับแสดง Airline + Passenger Type */
@@ -1007,7 +989,7 @@ const DocumentViewer = ({
 }
 
 /* ===========================================
-   Multi PO Receipt Table Styles
+   Multi INV Receipt Table Styles
    =========================================== */
 
 .multi-po-receipt-table th {

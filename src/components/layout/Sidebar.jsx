@@ -12,7 +12,6 @@ import {
   Search,
   BarChart,
   LogOut,
-  Eye,
   User,
   Shield,
   Activity,
@@ -28,35 +27,19 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const { user, logout } = useAuth();
 
   const menuData = [
-    {
-      id: 0,
-      title: "Overview",
-      icon: <Activity size={18} />,
-      path: "/overview",
-      submenu: [],
-    },
+    // {
+    //   id: 0,
+    //   title: "Overview",
+    //   icon: <Activity size={18} />,
+    //   path: "/overview",
+    //   submenu: [],
+    // },
     {
       id: 1,
       title: "Sales",
       icon: <ShoppingCart size={18} />,
       path: "/sale/ticket",
-      submenu: [
-        { id: "1.1", title: "Sale Ticket", path: "/sale/ticket" },
-        { id: "1.2", title: "Sale Deposit", path: "/sale/deposit" },
-        { id: "1.3", title: "Sale Voucher", path: "/sale/voucher" },
-        { id: "1.4", title: "Sale Other", path: "/sale/other" },
-      ],
-    },
-    {
-      id: 2,
-      title: "View",
-      icon: <Eye size={18} />,
-      path: "/view/flight-tickets",
-      submenu: [
-        { id: "2.1", title: "Flight Tickets", path: "/view/flight-tickets" },
-        { id: "2.2", title: "Bus, Boat, Tour", path: "/view/bus-boat-tour" },
-        { id: "2.3", title: "Other Services", path: "/view/other-services" },
-      ],
+      submenu: [],
     },
     {
       id: 6,
@@ -66,8 +49,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       submenu: [
         { id: "6.1", title: "Invoice List", path: "/documents/invoice-list" },
         { id: "6.2", title: "Receipt List", path: "/documents/receipt-list" },
-        { id: "6.3", title: "Deposit List", path: "/documents/deposit-list" },
-        { id: "6.4", title: "Voucher List", path: "/documents/voucher-list" },
       ],
     },
     {
@@ -185,7 +166,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       <div className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200">
         {menuData
           .filter(
-            (menu) => menu.id !== 7 || (menu.id === 7 && user?.role === "admin")
+            (menu) =>
+              menu.id !== 7 || (menu.id === 7 && user?.role === "admin"),
           )
           .map((menu) => (
             <div key={menu.id} className="mb-1 px-3">
@@ -195,7 +177,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 } ${
                   location.pathname === menu.path ||
                   menu.submenu.some(
-                    (submenu) => location.pathname === submenu.path
+                    (submenu) => location.pathname === submenu.path,
                   )
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-700 hover:bg-gray-50"
@@ -204,22 +186,22 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                   menu.disabled
                     ? null
                     : menu.submenu.length > 0
-                    ? toggleMenu(menu.id)
-                    : navigate(menu.path)
+                      ? toggleMenu(menu.id)
+                      : navigate(menu.path)
                 }
               >
                 <span
                   className={`${
                     location.pathname === menu.path ||
                     menu.submenu.some(
-                      (submenu) => location.pathname === submenu.path
+                      (submenu) => location.pathname === submenu.path,
                     )
                       ? "text-blue-500"
                       : "text-gray-500"
                   } transition-transform duration-200 ${
                     location.pathname === menu.path ||
                     menu.submenu.some(
-                      (submenu) => location.pathname === submenu.path
+                      (submenu) => location.pathname === submenu.path,
                     )
                       ? "scale-110"
                       : ""
@@ -287,8 +269,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                           submenu.disabled
                             ? "opacity-50 cursor-not-allowed text-gray-400"
                             : location.pathname === submenu.path
-                            ? "bg-blue-50 text-blue-600 font-medium cursor-pointer"
-                            : "text-gray-600 hover:bg-gray-50 cursor-pointer"
+                              ? "bg-blue-50 text-blue-600 font-medium cursor-pointer"
+                              : "text-gray-600 hover:bg-gray-50 cursor-pointer"
                         }`}
                         onClick={() => {
                           if (!submenu.disabled) {

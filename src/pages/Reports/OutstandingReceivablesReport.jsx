@@ -16,7 +16,7 @@ import PaymentDetailModal from "./components/PaymentDetailModal";
 import * as XLSX from "xlsx";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
 
 // Helper function to parse routing_detail string to routes array
 const parseRoutingDetail = (routingDetail) => {
@@ -609,7 +609,7 @@ const OutstandingReceivablesReport = () => {
       // Add table header
       exportData.push([
         "Date",
-        "PO Number",
+        "INV Number",
         "Customer Code",
         "Supplier Code",
         "PAX",
@@ -770,7 +770,7 @@ const OutstandingReceivablesReport = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Search PO Number, CUST, SUP, Pax's Name, Ticket Number, Code..."
+                    placeholder="Search INV Number, CUST, SUP, Pax's Name, Ticket Number, Code..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -905,7 +905,7 @@ const OutstandingReceivablesReport = () => {
                         onClick={() => handleSort("booking_ref_no")}
                       >
                         <div className="flex items-center justify-center">
-                          PO Number
+                          INV Number
                           <ChevronsUpDown size={16} className="ml-1" />
                         </div>
                       </th>

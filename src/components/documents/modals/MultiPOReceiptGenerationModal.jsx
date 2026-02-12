@@ -64,7 +64,7 @@ const MultiPOReceiptGenerationModal = ({
       if (response.success) {
         setAvailablePOs(response.data || []);
       } else {
-        throw new Error(response.error || "ไม่สามารถโหลดรายการ PO ได้");
+        throw new Error(response.error || "ไม่สามารถโหลดรายการ INV ได้");
       }
     } catch (err) {
       const errorMessage = err.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล";
@@ -87,7 +87,7 @@ const MultiPOReceiptGenerationModal = ({
       // ตรวจสอบ customer ต้องเหมือนกัน
       const firstCustomerId = prev[0].customer_id;
       if (po.customer_id !== firstCustomerId && !isSelected) {
-        showError("กรุณาเลือก PO ของ Customer เดียวกันเท่านั้น", 3000);
+        showError("กรุณาเลือก INV ของ Customer เดียวกันเท่านั้น", 3000);
         return prev;
       }
 
@@ -138,7 +138,7 @@ const MultiPOReceiptGenerationModal = ({
         })
       : availablePOs;
 
-    // เรียงตาม PO No. จากน้อยไปมาก
+    // เรียงตาม INV No. จากน้อยไปมาก
     return result.sort((a, b) => {
       const poA = a.po_number || "";
       const poB = b.po_number || "";
@@ -153,7 +153,7 @@ const MultiPOReceiptGenerationModal = ({
 
   const handleGenerateRC = async () => {
     if (selectedPOs.length === 0) {
-      setError("กรุณาเลือก PO อย่างน้อย 1 รายการ");
+      setError("กรุณาเลือก INV อย่างน้อย 1 รายการ");
       return;
     }
 
@@ -214,7 +214,7 @@ const MultiPOReceiptGenerationModal = ({
           <div className="bg-blue-600 p-4 text-white flex justify-between items-center shrink-0">
             <h1 className="text-xl font-bold flex items-center">
               <Receipt size={20} className="mr-2" />
-              สร้าง RC จากหลาย PO
+              สร้าง RC จากหลาย INV
             </h1>
             <button
               className="p-2 hover:bg-blue-700 rounded-full transition-colors"
@@ -229,14 +229,14 @@ const MultiPOReceiptGenerationModal = ({
             {/* Select POs Section */}
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-3">
-                เลือก PO ที่ต้องการรวม RC
+                เลือก INV ที่ต้องการรวม RC
               </h2>
 
               {/* Search */}
               <div className="mb-3">
                 <input
                   type="text"
-                  placeholder="ค้นหา PO No, Customer, Supplier, Routing..."
+                  placeholder="ค้นหา INV No, Customer, Supplier, Routing..."
                   className="w-full px-3 py-2 border rounded-md"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -288,7 +288,7 @@ const MultiPOReceiptGenerationModal = ({
                   </div>
                 ) : filteredPOs.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
-                    ไม่พบ PO ที่พร้อมออก RC
+                    ไม่พบ INV ที่พร้อมออก RC
                   </div>
                 ) : (
                   <table className="w-full">
@@ -298,7 +298,7 @@ const MultiPOReceiptGenerationModal = ({
                           เลือก
                         </th>
                         <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">
-                          PO No.
+                          INV No.
                         </th>
                         <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">
                           Customer
@@ -384,7 +384,7 @@ const MultiPOReceiptGenerationModal = ({
                 <div className="mt-4 bg-gray-50 p-4 rounded-md">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">จำนวน PO:</span>
+                      <span className="text-gray-600">จำนวน INV:</span>
                       <span className="ml-2 font-medium">
                         {selectedPOs.length} รายการ
                       </span>
@@ -445,7 +445,7 @@ const MultiPOReceiptGenerationModal = ({
               ) : (
                 <>
                   <Receipt size={16} className="mr-2" />
-                  สร้าง Receipt ({selectedPOs.length} PO)
+                  สร้าง Receipt ({selectedPOs.length} INV)
                 </>
               )}
             </button>

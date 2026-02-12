@@ -38,7 +38,7 @@ const PaymentDetailModal = ({
     if (!booking) return;
 
     try {
-      const response = await fetch("https://samuilookbiz.com/api/gateway.php", {
+      const response = await fetch("https://hds.samuilookbiz.com/api/gateway.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,7 +69,7 @@ const PaymentDetailModal = ({
 
     setLoading(true);
     try {
-      const response = await fetch("https://samuilookbiz.com/api/gateway.php", {
+      const response = await fetch("https://hds.samuilookbiz.com/api/gateway.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

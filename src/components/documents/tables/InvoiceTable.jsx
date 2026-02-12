@@ -16,6 +16,7 @@ const InvoiceTable = ({
   passengerTypes,
   extras,
   summary,
+  remark,
 }) => {
   // 🔧 คำนวณความกว้างของ route-path สำหรับ dynamic grid
   const dynamicRouteGridCSS = useMemo(() => {
@@ -23,7 +24,7 @@ const InvoiceTable = ({
       return "";
     }
 
-    const routesList = flights.routes.slice(0, 4).map((route) => {
+    const routesList = flights.routes.slice(0, 5).map((route) => {
       return route.origin_city_name && route.destination_city_name
         ? `${route.origin_city_name.toUpperCase()}-${route.destination_city_name.toUpperCase()}`
         : route.origin && route.destination
@@ -49,39 +50,39 @@ const InvoiceTable = ({
             </tr>
           </thead>
           <tbody>
-            {/* NAME Section - แสดง 6 บรรทัดเสมอ */}
+            {/* NAME Section - แสดงชื่อผู้โดยสาร + ราคาตามประเภท */}
             <tr>
               <td className="print-section-header">NAME /ชื่อผู้โดยสาร</td>
               <td className="print-td-amount"></td>
             </tr>
-            {passengers.map((passenger, index) => (
-              <tr key={`passenger-${index}`}>
-                <td className="print-passenger-item">
-                  <div className="print-passenger-grid">
-                    <span className="passenger-index">
-                      {passenger.displayData?.index || ""}
+            {(() => {
+              const priceList = [];
+              const adt1Entry = passengerTypes?.find((p) => p.type === "ADT 1");
+              const adt2Entry = passengerTypes?.find((p) => p.type === "ADT 2");
+              const adt3Entry = passengerTypes?.find((p) => p.type === "ADT 3");
+              if (adt1Entry?.priceDisplay) priceList.push({ label: "ADT 1", price: adt1Entry.priceDisplay });
+              if (adt2Entry?.priceDisplay) priceList.push({ label: "ADT 2", price: adt2Entry.priceDisplay });
+              if (adt3Entry?.priceDisplay) priceList.push({ label: "ADT 3", price: adt3Entry.priceDisplay });
+
+              return passengers.map((passenger, index) => (
+                <tr key={`passenger-${index}`}>
+                  <td className="print-passenger-item print-airline-row">
+                    <div className="print-passenger-grid">
+                      <span className="passenger-index">
+                        {passenger.displayData?.index || ""}
+                      </span>
+                      <span className="passenger-name">
+                        {passenger.displayData?.name || "\u00A0"}
+                      </span>
+                    </div>
+                    <span className="print-passenger-type">
+                      {priceList[index]?.label || ""}
                     </span>
-                    <span className="passenger-name">
-                      {passenger.displayData?.name
-                        ? passenger.displayData.name.length > 25
-                          ? passenger.displayData.name.substring(0, 25) + "..."
-                          : passenger.displayData.name
-                        : "\u00A0"}
-                    </span>
-                    <span className="passenger-age">
-                      {passenger.displayData?.age || "\u00A0"}
-                    </span>
-                    <span className="passenger-ticket">
-                      {passenger.displayData?.ticketNumber || "\u00A0"}
-                    </span>
-                    <span className="passenger-code">
-                      {passenger.displayData?.ticketCode || "\u00A0"}
-                    </span>
-                  </div>
-                </td>
-                <td className="print-td-amount"></td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="print-td-amount">{priceList[index]?.price || ""}</td>
+                </tr>
+              ));
+            })()}
 
             {/* AIR TICKET Section - 7 บรรทัดเสมอ (แบบ Deposit) */}
             <tr>
@@ -96,10 +97,10 @@ const InvoiceTable = ({
               const MAX_AIR_TICKET_ROWS = 7;
               const airTicketRows = [];
 
-              // เตรียม routes สำหรับแสดง (สูงสุด 4 routes) - เปลี่ยนเป็น object
+              // เตรียม routes สำหรับแสดง (สูงสุด 5 routes) - เปลี่ยนเป็น object
               let routesList = [];
               if (flights?.routes && flights.routes.length > 0) {
-                const maxRoutes = 4;
+                const maxRoutes = 5;
                 routesList = flights.routes.slice(0, maxRoutes).map((route) => {
                   return {
                     flight: route.flight_number || route.flight || "",
@@ -129,8 +130,8 @@ const InvoiceTable = ({
                 ];
               }
 
-              // เติมบรรทัดว่างให้ครบ 4 routes
-              while (routesList.length < 4) {
+              // เติมบรรทัดว่างให้ครบ 5 routes
+              while (routesList.length < 5) {
                 routesList.push({
                   flight: "",
                   /* rbd: "", */ date: "",
@@ -139,132 +140,30 @@ const InvoiceTable = ({
                 });
               }
 
-              // บรรทัดที่ 1: Supplier only
-              airTicketRows.push(
-                <tr key="air-0">
-                  <td className="print-section-item print-airline-row">
-                    <span className="print-airline-name">
-                      {flights?.supplierName || ""}
-                    </span>
-                  </td>
-                  <td className="print-td-amount"></td>
-                </tr>,
-              );
-
-              const adultPrice =
-                passengerTypes?.find((p) => p.type === "ADULT")?.priceDisplay ||
-                "";
-              const childPrice =
-                passengerTypes?.find((p) => p.type === "CHILD")?.priceDisplay ||
-                "";
-              const infantPrice =
-                passengerTypes?.find((p) => p.type === "INFANT")
-                  ?.priceDisplay || "";
-
-              // บรรทัดที่ 2: Route[0] + ADULT (ซ่อนข้อความถ้าไม่มีราคา)
-              airTicketRows.push(
-                <tr key="air-1">
-                  <td className="print-section-item print-airline-row">
-                    <div className="print-airline-name print-route-grid">
-                      <span className="route-flight">
-                        {routesList[0]?.flight || ""}
-                      </span>
-                      {/* <span className="route-rbd">{routesList[0]?.rbd || ""}</span> */}
-                      <span className="route-date">
-                        {routesList[0]?.date || ""}
-                      </span>
-                      <span className="route-path">
-                        {routesList[0]?.path || ""}
-                      </span>
-                      <span className="route-time">
-                        {routesList[0]?.time || ""}
-                      </span>
-                    </div>
-                    <span className="print-passenger-type">
-                      {adultPrice ? "ADULT" : ""}
-                    </span>
-                  </td>
-                  <td className="print-td-amount">{adultPrice}</td>
-                </tr>,
-              );
-
-              // บรรทัดที่ 3: Route[1] + CHILD (ซ่อนข้อความถ้าไม่มีราคา)
-              airTicketRows.push(
-                <tr key="air-2">
-                  <td className="print-section-item print-airline-row">
-                    <div className="print-airline-name print-route-grid">
-                      <span className="route-flight">
-                        {routesList[1]?.flight || ""}
-                      </span>
-                      {/* <span className="route-rbd">{routesList[1]?.rbd || ""}</span> */}
-                      <span className="route-date">
-                        {routesList[1]?.date || ""}
-                      </span>
-                      <span className="route-path">
-                        {routesList[1]?.path || ""}
-                      </span>
-                      <span className="route-time">
-                        {routesList[1]?.time || ""}
-                      </span>
-                    </div>
-                    <span className="print-passenger-type">
-                      {childPrice ? "CHILD" : ""}
-                    </span>
-                  </td>
-                  <td className="print-td-amount">{childPrice}</td>
-                </tr>,
-              );
-
-              // บรรทัดที่ 4: Route[2] + INFANT (ซ่อนข้อความถ้าไม่มีราคา)
-              airTicketRows.push(
-                <tr key="air-3">
-                  <td className="print-section-item print-airline-row">
-                    <div className="print-airline-name print-route-grid">
-                      <span className="route-flight">
-                        {routesList[2]?.flight || ""}
-                      </span>
-                      {/* <span className="route-rbd">{routesList[2]?.rbd || ""}</span> */}
-                      <span className="route-date">
-                        {routesList[2]?.date || ""}
-                      </span>
-                      <span className="route-path">
-                        {routesList[2]?.path || ""}
-                      </span>
-                      <span className="route-time">
-                        {routesList[2]?.time || ""}
-                      </span>
-                    </div>
-                    <span className="print-passenger-type">
-                      {infantPrice ? "INFANT" : ""}
-                    </span>
-                  </td>
-                  <td className="print-td-amount">{infantPrice}</td>
-                </tr>,
-              );
-
-              // บรรทัดที่ 5: Route[3] (แสดงแค่ route ไม่มีราคา)
-              airTicketRows.push(
-                <tr key="air-4">
-                  <td className="print-section-item print-airline-row">
-                    <div className="print-airline-name print-route-grid">
-                      <span className="route-flight">
-                        {routesList[3]?.flight || ""}
-                      </span>
-                      {/* <span className="route-rbd">{routesList[3]?.rbd || ""}</span> */}
-                      <span className="route-date">
-                        {routesList[3]?.date || ""}
-                      </span>
-                      <span className="route-path">
-                        {routesList[3]?.path || ""}
-                      </span>
-                      <span className="route-time">
-                        {routesList[3]?.time || ""}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="print-td-amount"></td>
-                </tr>,
-              );
+              // บรรทัดที่ 1-5: Route[0]-Route[4] (แสดงแค่ route ไม่มีราคา)
+              for (let i = 0; i < 5; i++) {
+                airTicketRows.push(
+                  <tr key={`air-${i + 1}`}>
+                    <td className="print-section-item print-airline-row">
+                      <div className="print-airline-name print-route-grid">
+                        <span className="route-flight">
+                          {routesList[i]?.flight || ""}
+                        </span>
+                        <span className="route-date">
+                          {routesList[i]?.date || ""}
+                        </span>
+                        <span className="route-path">
+                          {routesList[i]?.path || ""}
+                        </span>
+                        <span className="route-time">
+                          {routesList[i]?.time || ""}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="print-td-amount"></td>
+                  </tr>,
+                );
+              }
 
               // เติมบรรทัดว่างให้ครบ 7 บรรทัด
               while (airTicketRows.length < MAX_AIR_TICKET_ROWS) {
@@ -279,21 +178,34 @@ const InvoiceTable = ({
               return airTicketRows;
             })()}
 
-            {/* OTHER Section - 3 บรรทัดเสมอ */}
+            {/* OTHER Section - 3 บรรทัดเสมอ (แสดง Remark แทน) */}
             <tr>
-              <td className="print-section-header">Other</td>
+              <td className="print-section-header">Remark</td>
               <td className="print-td-amount"></td>
             </tr>
-            {(extras || []).map((extra, index) => (
-              <tr key={`extra-${index}`}>
-                <td className="print-section-item">
-                  {extra.description || "\u00A0"}
-                </td>
-                <td className="print-td-amount">
-                  {extra.priceDisplay || "\u00A0"}
-                </td>
-              </tr>
-            ))}
+            {(() => {
+              const MIN_OTHER_ROWS = 3;
+              const rows = [];
+              // บรรทัดแรก: แสดง Remark
+              rows.push(
+                <tr key="other-remark">
+                  <td className="print-section-item">
+                    {remark || "\u00A0"}
+                  </td>
+                  <td className="print-td-amount">{"\u00A0"}</td>
+                </tr>
+              );
+              // เติมบรรทัดว่างให้ครบ 3 บรรทัด
+              for (let i = rows.length; i < MIN_OTHER_ROWS; i++) {
+                rows.push(
+                  <tr key={`other-empty-${i}`}>
+                    <td className="print-section-item">{"\u00A0"}</td>
+                    <td className="print-td-amount">{"\u00A0"}</td>
+                  </tr>
+                );
+              }
+              return rows;
+            })()}
 
             {/* Summary */}
             <tr className="print-summary-row">

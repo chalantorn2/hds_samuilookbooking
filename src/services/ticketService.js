@@ -63,12 +63,12 @@ export const createFlightTicket = async (ticketData) => {
     const payload = {
       customerId: ticketData.customerId,
       supplierId: ticketData.supplierId,
-      depositId: ticketData.depositId || null, // ✅ เพิ่ม depositId สำหรับการเชื่อมโยง DP กับ FT
+      depositId: ticketData.depositId || null,
       paymentStatus: ticketData.paymentStatus || "unpaid",
       createdBy: ticketData.createdBy,
       updatedBy: ticketData.updatedBy,
 
-      // Dates (ไม่ต้องแปลง timezone เพราะ PHP Server ตั้งเป็น Bangkok timezone แล้ว)
+      // Dates
       bookingDate: ticketData.bookingDate || null,
       dueDate: ticketData.dueDate || null,
       creditDays: ticketData.creditDays,
@@ -77,21 +77,13 @@ export const createFlightTicket = async (ticketData) => {
       pricing: ticketData.pricing || {},
       vatPercent: ticketData.vatPercent || 0,
 
-      // Payment methods
-      companyPaymentMethod: ticketData.companyPaymentMethod,
-      companyPaymentDetails: ticketData.companyPaymentDetails,
-      customerPaymentMethod: ticketData.customerPaymentMethod,
-      customerPaymentDetails: ticketData.customerPaymentDetails,
-
       // Additional info
       code: ticketData.code,
-      ticketType: (ticketData.ticketType || "bsp").toLowerCase(),
-      ticketTypeDetails: ticketData.ticketTypeDetails,
+      remark: ticketData.remark || "",
 
       // Related data
       passengers: ticketData.passengers || [],
       routes: ticketData.routes || [],
-      extras: ticketData.extras || [],
     };
 
     // 🔄 เปลี่ยนจาก Supabase เป็น API Gateway

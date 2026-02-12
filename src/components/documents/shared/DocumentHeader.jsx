@@ -13,7 +13,7 @@ const DOCUMENT_CONFIGS = {
   },
   receipt: {
     title: { thai: "ใบเสร็จรับเงิน", english: "Receipt" },
-    numberField: "rcNumber", // ⭐ แสดง RC Number แทน PO Number
+    numberField: "rcNumber", // ⭐ แสดง RC Number แทน INV Number
   },
   voucher: {
     title: { thai: "Voucher", english: "Voucher" },
@@ -38,7 +38,7 @@ const DocumentHeader = ({
   customerData = {},
   documentInfo = {},
   serviceType = null, // เพิ่ม serviceType สำหรับ voucher
-  isMultiPOReceipt = false, // เพื่อแยก Receipt เดี่ยวๆ กับ Multi PO Receipt
+  isMultiPOReceipt = false, // เพื่อแยก Receipt เดี่ยวๆ กับ Multi INV Receipt
 }) => {
   console.log("📄 DocumentHeader received props:", {
     documentType,
@@ -210,7 +210,7 @@ const DocumentHeader = ({
               <span className="print-info-value">{getDocumentNumber()}</span>
             </div>
 
-            {/* ⭐ แสดง Ref: PO Number สำหรับ Receipt เดี่ยวๆ เท่านั้น (ไม่ใช่ Multi PO Receipt) */}
+            {/* ⭐ แสดง Ref: INV Number สำหรับ Receipt เดี่ยวๆ เท่านั้น (ไม่ใช่ Multi INV Receipt) */}
             {documentType === "receipt" && !isMultiPOReceipt && documentInfo.poNumber && (
               <div className="print-info-row">
                 <span className="print-info-label">Ref:</span>

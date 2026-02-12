@@ -5,7 +5,7 @@ import { formatNumber, parseInput } from "./FormatNumber";
  * PricingTable Component - ใช้สำหรับแสดงและจัดการตารางราคาในหน้าต่างๆ
  *
  * @param {Object} props - Properties ของ component
- * @param {Object} props.pricing - Object ที่เก็บข้อมูลราคา (adult, child, infant)
+ * @param {Object} props.pricing - Object ที่เก็บข้อมูลราคา (adt1, adt2, adt3)
  * @param {Function} props.updatePricing - Function สำหรับอัพเดทราคา
  * @param {string} props.title - หัวข้อของตาราง (optional)
  * @param {Object} props.config - การตั้งค่าเพิ่มเติม (optional)
@@ -17,9 +17,9 @@ import { formatNumber, parseInput } from "./FormatNumber";
  */
 const PricingTable = ({
   pricing = {
-    adult: { net: "", sale: "", pax: 0, total: 0 },
-    child: { net: "", sale: "", pax: 0, total: 0 },
-    infant: { net: "", sale: "", pax: 0, total: 0 },
+    adt1: { net: "", sale: "", pax: 0, total: 0 },
+    adt2: { net: "", sale: "", pax: 0, total: 0 },
+    adt3: { net: "", sale: "", pax: 0, total: 0 },
   },
   updatePricing,
   title = "",
@@ -56,14 +56,20 @@ const PricingTable = ({
     updatePricing(category, field, cleanValue, newTotal);
   };
 
-  // คำนวณยอดรวมทั้งหมด (ไม่มีทศนิยม)
+  // คำนวณยอดรวมทั้งหมด
   const calculateTotal = () => {
-    const adultTotal = parseFloat(pricing.adult?.total || 0);
-    const childTotal = parseFloat(pricing.child?.total || 0);
-    const infantTotal = parseFloat(pricing.infant?.total || 0);
-
-    return (adultTotal + childTotal + infantTotal).toFixed(2);
+    const adt1Total = parseFloat(pricing.adt1?.total || 0);
+    const adt2Total = parseFloat(pricing.adt2?.total || 0);
+    const adt3Total = parseFloat(pricing.adt3?.total || 0);
+    return (adt1Total + adt2Total + adt3Total).toFixed(2);
   };
+
+  // Row definitions
+  const rows = [
+    { key: "adt1", label: "ADT 1" },
+    { key: "adt2", label: "ADT 2" },
+    { key: "adt3", label: "ADT 3" },
+  ];
 
   return (
     <div className={`${config.showBorder ? "rounded-lg" : ""}`}>
@@ -83,164 +89,60 @@ const PricingTable = ({
           </div>
         )}
 
-        {/* Adult Row */}
-        <div className="grid grid-cols-12 gap-2 pt-2 p-1 pl-3 items-center bg-white">
-          <div className="col-span-1">
-            <span className="text-right col-span-1 font-medium">Adult</span>
+        {rows.map((row) => (
+          <div key={row.key} className="grid grid-cols-12 gap-2 pt-2 p-1 pl-3 items-center bg-white">
+            <div className="col-span-1">
+              <span className="text-right col-span-1 font-medium">{row.label}</span>
+            </div>
+            <div className="col-span-3">
+              <input
+                type="text"
+                className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
+                value={formatNumber(pricing[row.key]?.net) || ""}
+                onChange={(e) =>
+                  handleUpdatePricing(row.key, "net", e.target.value)
+                }
+                disabled={readOnly || !config.enableEdit}
+              />
+            </div>
+            <div className="col-span-3">
+              <input
+                type="text"
+                className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
+                value={formatNumber(pricing[row.key]?.sale) || ""}
+                onChange={(e) =>
+                  handleUpdatePricing(row.key, "sale", e.target.value)
+                }
+                disabled={readOnly || !config.enableEdit}
+              />
+            </div>
+            <div className="col-span-1">
+              <input
+                type="number"
+                min="0"
+                className="w-full border text-center border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
+                value={pricing[row.key]?.pax || ""}
+                onChange={(e) =>
+                  handleUpdatePricing(row.key, "pax", e.target.value)
+                }
+                disabled={readOnly || !config.enableEdit}
+              />
+            </div>
+            <div className="col-span-4">
+              <input
+                type="text"
+                className="w-full border text-right border-gray-400 rounded-md p-2 bg-gray-100"
+                placeholder="0"
+                value={formatNumber(pricing[row.key]?.total) || ""}
+                disabled
+              />
+            </div>
           </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.adult?.net) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("adult", "net", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.adult?.sale) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("adult", "sale", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-1">
-            <input
-              type="number"
-              min="0"
-              className="w-full border text-center border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={pricing.adult?.pax || ""}
-              onChange={(e) =>
-                handleUpdatePricing("adult", "pax", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-4">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 bg-gray-100"
-              placeholder="0"
-              value={formatNumber(pricing.adult?.total) || ""}
-              disabled
-            />
-          </div>
-        </div>
+        ))}
 
-        {/* Child Row */}
-        <div className="grid grid-cols-12 gap-2 pt-2 p-1 pl-3 items-center bg-white">
-          <div className="col-span-1">
-            <span className="text-right col-span-1 font-medium">Child</span>
-          </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.child?.net) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("child", "net", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.child?.sale) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("child", "sale", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-1">
-            <input
-              type="number"
-              min="0"
-              className="w-full border text-center border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={pricing.child?.pax || ""}
-              onChange={(e) =>
-                handleUpdatePricing("child", "pax", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-4">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 bg-gray-100"
-              placeholder="0"
-              value={formatNumber(pricing.child?.total) || ""}
-              disabled
-            />
-          </div>
-        </div>
-
-        {/* Infant Row */}
-        <div className="grid grid-cols-12 gap-2 pt-2 p-1 pl-3 items-center bg-white">
-          <div className="col-span-1">
-            <span className="text-right col-span-1 font-medium">Infant</span>
-          </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.infant?.net) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("infant", "net", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-3">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={formatNumber(pricing.infant?.sale) || ""}
-              onChange={(e) =>
-                handleUpdatePricing("infant", "sale", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-1">
-            <input
-              type="number"
-              min="0"
-              className="w-full border text-center border-gray-400 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0"
-              value={pricing.infant?.pax || ""}
-              onChange={(e) =>
-                handleUpdatePricing("infant", "pax", e.target.value)
-              }
-              disabled={readOnly || !config.enableEdit}
-            />
-          </div>
-          <div className="col-span-4">
-            <input
-              type="text"
-              className="w-full border text-right border-gray-400 rounded-md p-2 bg-gray-100"
-              placeholder="0"
-              value={formatNumber(pricing.infant?.total) || ""}
-              disabled
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

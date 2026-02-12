@@ -131,13 +131,8 @@ class TicketCoreHandler extends BaseHandler
             // 5. บันทึกข้อมูลเพิ่มเติม ticket_additional_info
             $additionalData = [
                 'bookings_ticket_id' => $ticketId,
-                'company_payment_method' => $data['companyPaymentMethod'] ?? null,
-                'company_payment_details' => $data['companyPaymentDetails'] ?? null,
-                'customer_payment_method' => $data['customerPaymentMethod'] ?? null,
-                'customer_payment_details' => $data['customerPaymentDetails'] ?? null,
                 'code' => $data['code'] ?? null,
-                'ticket_type' => strtolower($data['ticketType'] ?? 'bsp'),
-                'ticket_type_details' => $data['ticketTypeDetails'] ?? null
+                'remark' => $data['remark'] ?? null
             ];
 
             $additionalResult = $this->db->insert('ticket_additional_info', $additionalData);
@@ -160,12 +155,7 @@ class TicketCoreHandler extends BaseHandler
                 $this->insertRoutes($ticketId, $data['routes']);
             }
 
-            // 9. บันทึกข้อมูลรายการเพิ่มเติม (ถ้ามี)
-            if (!empty($data['extras'])) {
-                $this->insertExtras($ticketId, $data['extras']);
-            }
-
-            // ✅ 10. ถ้ามี depositId ให้อัพเดท bookings_deposit.flight_ticket_id
+            // 9. ถ้ามี depositId ให้อัพเดท bookings_deposit.flight_ticket_id
             if (!empty($data['depositId'])) {
                 $updateDepositResult = $this->db->update(
                     'bookings_deposit',
@@ -499,7 +489,7 @@ class TicketCoreHandler extends BaseHandler
     private function calculatePricingSubtotal($pricing)
     {
         $total = 0;
-        foreach (['adult', 'child', 'infant'] as $type) {
+        foreach (['adt1', 'adt2', 'adt3'] as $type) {
             if (isset($pricing[$type])) {
                 $total += floatval($pricing[$type]['total'] ?? 0);
             }
@@ -546,18 +536,18 @@ class TicketCoreHandler extends BaseHandler
     {
         $pricingData = [
             'bookings_ticket_id' => $ticketId,
-            'adult_net_price' => floatval($pricing['adult']['net'] ?? 0),
-            'adult_sale_price' => floatval($pricing['adult']['sale'] ?? 0),
-            'adult_pax' => intval($pricing['adult']['pax'] ?? 0),
-            'adult_total' => floatval($pricing['adult']['total'] ?? 0),
-            'child_net_price' => floatval($pricing['child']['net'] ?? 0),
-            'child_sale_price' => floatval($pricing['child']['sale'] ?? 0),
-            'child_pax' => intval($pricing['child']['pax'] ?? 0),
-            'child_total' => floatval($pricing['child']['total'] ?? 0),
-            'infant_net_price' => floatval($pricing['infant']['net'] ?? 0),
-            'infant_sale_price' => floatval($pricing['infant']['sale'] ?? 0),
-            'infant_pax' => intval($pricing['infant']['pax'] ?? 0),
-            'infant_total' => floatval($pricing['infant']['total'] ?? 0),
+            'adt1_net_price' => floatval($pricing['adt1']['net'] ?? 0),
+            'adt1_sale_price' => floatval($pricing['adt1']['sale'] ?? 0),
+            'adt1_pax' => intval($pricing['adt1']['pax'] ?? 0),
+            'adt1_total' => floatval($pricing['adt1']['total'] ?? 0),
+            'adt2_net_price' => floatval($pricing['adt2']['net'] ?? 0),
+            'adt2_sale_price' => floatval($pricing['adt2']['sale'] ?? 0),
+            'adt2_pax' => intval($pricing['adt2']['pax'] ?? 0),
+            'adt2_total' => floatval($pricing['adt2']['total'] ?? 0),
+            'adt3_net_price' => floatval($pricing['adt3']['net'] ?? 0),
+            'adt3_sale_price' => floatval($pricing['adt3']['sale'] ?? 0),
+            'adt3_pax' => intval($pricing['adt3']['pax'] ?? 0),
+            'adt3_total' => floatval($pricing['adt3']['total'] ?? 0),
             'subtotal_amount' => $subtotal,
             'vat_amount' => $vatAmount,
             'total_amount' => $subtotal

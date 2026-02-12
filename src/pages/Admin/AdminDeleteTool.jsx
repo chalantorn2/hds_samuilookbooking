@@ -70,7 +70,7 @@ const AdminDeleteTool = () => {
     setLoading(true);
     try {
       const API_BASE_URL =
-        import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+        import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
 
       // Call enhanced API that fetches from all booking tables
       const response = await fetch(`${API_BASE_URL}/gateway.php`, {
@@ -185,7 +185,7 @@ const AdminDeleteTool = () => {
 
     try {
       const API_BASE_URL =
-        import.meta.env.VITE_API_BASE_URL || "https://samuilookbiz.com/api";
+        import.meta.env.VITE_API_BASE_URL || "https://hds.samuilookbiz.com/api";
 
       const response = await fetch(`${API_BASE_URL}/gateway.php`, {
         method: "POST",

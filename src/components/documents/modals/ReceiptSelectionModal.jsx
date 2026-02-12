@@ -71,39 +71,42 @@ const ReceiptSelectionModal = ({
     if (hasSelection) {
       // ถ้ามีการเลือก (ไม่ได้เลือกทั้งหมด) ให้นับจากผู้โดยสารที่เลือกจริงๆ
       selectedPassengerTypes = {
-        ADT: 0,
-        CHD: 0,
-        INF: 0,
+        ADT1: 0,
+        ADT2: 0,
+        ADT3: 0,
       };
 
       selectedPassengers.forEach((passenger) => {
         if (passenger.selected) {
-          const type = passenger.age?.toUpperCase() || "ADT";
+          const age = (passenger.age || "").toUpperCase();
+          let type = "ADT1";
+          if (age === "ADT2" || age === "CHD" || age === "CHILD") type = "ADT2";
+          else if (age === "ADT3" || age === "INF" || age === "INFANT") type = "ADT3";
           selectedPassengerTypes[type] = (selectedPassengerTypes[type] || 0) + 1;
         }
       });
     } else {
       // ถ้าไม่มีการเลือก (เลือกทั้งหมด) ให้ใช้จำนวนจาก tickets_pricing
       selectedPassengerTypes = {
-        ADT: pricingData.adult_pax || 0,
-        CHD: pricingData.child_pax || 0,
-        INF: pricingData.infant_pax || 0,
+        ADT1: pricingData.adt1_pax || 0,
+        ADT2: pricingData.adt2_pax || 0,
+        ADT3: pricingData.adt3_pax || 0,
       };
     }
 
     const passengerTypeTotals = {
-      ADT: selectedPassengerTypes.ADT * (pricingData.adult_sale_price || 0),
-      CHD: selectedPassengerTypes.CHD * (pricingData.child_sale_price || 0),
-      INF: selectedPassengerTypes.INF * (pricingData.infant_sale_price || 0),
+      ADT1: selectedPassengerTypes.ADT1 * (pricingData.adt1_sale_price || 0),
+      ADT2: selectedPassengerTypes.ADT2 * (pricingData.adt2_sale_price || 0),
+      ADT3: selectedPassengerTypes.ADT3 * (pricingData.adt3_sale_price || 0),
     };
 
     // คำนวณราคาตามประเภทผู้โดยสาร
     passengerSubtotal +=
-      selectedPassengerTypes.ADT * (pricingData.adult_sale_price || 0);
+      selectedPassengerTypes.ADT1 * (pricingData.adt1_sale_price || 0);
     passengerSubtotal +=
-      selectedPassengerTypes.CHD * (pricingData.child_sale_price || 0);
+      selectedPassengerTypes.ADT2 * (pricingData.adt2_sale_price || 0);
     passengerSubtotal +=
-      selectedPassengerTypes.INF * (pricingData.infant_sale_price || 0);
+      selectedPassengerTypes.ADT3 * (pricingData.adt3_sale_price || 0);
 
     // คำนวณราคา extras ที่เลือก
     let extrasSubtotal = 0;
@@ -279,7 +282,7 @@ const ReceiptSelectionModal = ({
                             {passenger.passenger_name || "ไม่ระบุชื่อ"}
                           </span>
                           <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded">
-                            {passenger.age || "ADT"}
+                            {passenger.age || "ADT1"}
                           </span>
                         </div>
                         {(passenger.ticket_number || passenger.ticket_code) && (
@@ -387,44 +390,44 @@ const ReceiptSelectionModal = ({
                 <div>
                   <h3 className="font-medium mb-2">ผู้โดยสารที่เลือก:</h3>
                   <div className="space-y-1 text-sm">
-                    {calculatedTotals.selectedPassengerTypes?.ADT > 0 && (
+                    {calculatedTotals.selectedPassengerTypes?.ADT1 > 0 && (
                       <div className="flex justify-between">
                         <span>
-                          Adult: {calculatedTotals.selectedPassengerTypes.ADT}{" "}
+                          ADT 1: {calculatedTotals.selectedPassengerTypes.ADT1}{" "}
                           คน
                         </span>
                         <span>
                           ฿
                           {(
-                            calculatedTotals.passengerTypeTotals?.ADT || 0
+                            calculatedTotals.passengerTypeTotals?.ADT1 || 0
                           ).toLocaleString()}
                         </span>
                       </div>
                     )}
-                    {calculatedTotals.selectedPassengerTypes?.CHD > 0 && (
+                    {calculatedTotals.selectedPassengerTypes?.ADT2 > 0 && (
                       <div className="flex justify-between">
                         <span>
-                          Child: {calculatedTotals.selectedPassengerTypes.CHD}{" "}
+                          ADT 2: {calculatedTotals.selectedPassengerTypes.ADT2}{" "}
                           คน
                         </span>
                         <span>
                           ฿
                           {(
-                            calculatedTotals.passengerTypeTotals?.CHD || 0
+                            calculatedTotals.passengerTypeTotals?.ADT2 || 0
                           ).toLocaleString()}
                         </span>
                       </div>
                     )}
-                    {calculatedTotals.selectedPassengerTypes?.INF > 0 && (
+                    {calculatedTotals.selectedPassengerTypes?.ADT3 > 0 && (
                       <div className="flex justify-between">
                         <span>
-                          Infant: {calculatedTotals.selectedPassengerTypes.INF}{" "}
+                          ADT 3: {calculatedTotals.selectedPassengerTypes.ADT3}{" "}
                           คน
                         </span>
                         <span>
                           ฿
                           {(
-                            calculatedTotals.passengerTypeTotals?.INF || 0
+                            calculatedTotals.passengerTypeTotals?.ADT3 || 0
                           ).toLocaleString()}
                         </span>
                       </div>

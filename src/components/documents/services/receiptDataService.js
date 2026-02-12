@@ -23,7 +23,7 @@ export const getReceiptDataForPrint = async (
     });
 
     // ⭐ เปลี่ยนให้เรียก getReceiptData เสมอ (ไม่ว่าจะมี selectionData หรือไม่)
-    // เพราะ getReceiptData จะดึงข้อมูล Multi PO Receipt ด้วย
+    // เพราะ getReceiptData จะดึงข้อมูล Multi INV Receipt ด้วย
     console.log("🧾 Using getReceiptData for all receipts");
     return await getReceiptData(ticketId, selectionData, userId);
   } catch (error) {
@@ -51,7 +51,7 @@ const convertInvoiceToReceiptFormat = (invoiceData, ticketId) => {
       ...invoiceData.invoice,
       // ให้ใช้เฉพาะ RC Number เท่านั้น
       rcNumber: invoiceData.invoice.rcNumber || "",
-      // เก็บ PO Number ไว้สำหรับอ้างอิง
+      // เก็บ INV Number ไว้สำหรับอ้างอิง
       poNumber: invoiceData.invoice.poNumber,
     },
   };
@@ -175,14 +175,14 @@ export const createDefaultReceiptSelection = (invoiceData) => {
         vatAmount: invoiceData.summary?.vat || 0,
         total: invoiceData.summary?.total || 0,
         selectedPassengerTypes: {
-          ADT:
-            invoiceData.passengerTypes?.find((p) => p.type === "ADULT")
+          ADT1:
+            invoiceData.passengerTypes?.find((p) => p.type === "ADT 1")
               ?.quantity || 0,
-          CHD:
-            invoiceData.passengerTypes?.find((p) => p.type === "CHILD")
+          ADT2:
+            invoiceData.passengerTypes?.find((p) => p.type === "ADT 2")
               ?.quantity || 0,
-          INF:
-            invoiceData.passengerTypes?.find((p) => p.type === "INFANT")
+          ADT3:
+            invoiceData.passengerTypes?.find((p) => p.type === "ADT 3")
               ?.quantity || 0,
         },
       },
@@ -273,11 +273,11 @@ export const canGenerateReceipt = async (ticketId) => {
 
     const invoiceData = invoiceResult.data;
 
-    // ตรวจสอบว่ามี PO Number แล้วหรือไม่
+    // ตรวจสอบว่ามี INV Number แล้วหรือไม่
     if (!invoiceData.invoice?.poNumber) {
       return {
         canGenerate: false,
-        reason: "ต้องสร้าง Invoice (PO Number) ก่อนจึงจะสามารถออก Receipt ได้",
+        reason: "ต้องสร้าง Invoice (INV Number) ก่อนจึงจะสามารถออก Receipt ได้",
       };
     }
 
